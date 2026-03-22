@@ -5,13 +5,20 @@ import os
 def create_app():
     app = Flask(__name__)
 
+    # Detectar ambiente
+    is_production = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER') or os.environ.get('PRODUCTION')
+
     # Configurações
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sus-prontuario-secret-2024')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-        'DATABASE_URL', 'sqlite:///prontuario.db'
-    )
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sus-prontuario-secret-2024-mude-em-producao')
+
+    # Banco de dados — usa PostgreSQL em produção se disponível, SQLite em dev
+    database_url = os.environ.get('DATABASE_URL', 'sqlite:///prontuario.db')
+    # Railway fornece postgres://, SQLAlchemy precisa de postgresql://
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['WTF_CSRF_ENABLED'] = False  # Habilitar em produção
+    app.config['WTF_CSRF_ENABLED'] = False
 
     # Login manager
     @login_manager.user_loader
@@ -84,6 +91,9 @@ def create_app():
 
     return app
 
+# Para Railway/Render — gunicorn importa 'app' direto
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug = not (os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PRODUCTION'))
+    app.run(debug=debug, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

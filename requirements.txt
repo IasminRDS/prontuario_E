@@ -9,3 +9,5 @@ reportlab==4.0.7
 python-dotenv==1.0.0
 Flask-Migrate==4.0.5
 python-dateutil==2.9.0
+gunicorn==21.2.0
+qrcode[pil]==7.4.2
