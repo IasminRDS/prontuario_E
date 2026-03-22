@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Prontuário Único SUS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <h1>Prontuário Único</h1>
+      <p>Sistema de Saúde — SUS</p>
+    </div>
+
+    <div class="login-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="margin-bottom:16px">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">E-mail institucional</label>
+          <input type="email" name="email" class="form-control"
+                 placeholder="usuario@sus.gov.br"
+                 value="{{ request.form.get('email', '') }}" required autofocus>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px">
+          <label class="form-label">Senha</label>
+          <input type="password" name="senha" class="form-control"
+                 placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+          </svg>
+          Entrar no Sistema
+        </button>
+      </form>
+
+      <div style="margin-top:20px;padding:12px;background:var(--cinza-50);border-radius:6px;font-size:.75rem;color:var(--cinza-600)">
+        <strong>Acesso demo:</strong><br>
+        Admin: <code>admin@sus.gov.br</code> / <code>admin123</code><br>
+        Médico: <code>medico@sus.gov.br</code> / <code>medico123</code>
+      </div>
+    </div>
+
+    <div class="login-footer">
+      Acesso restrito a profissionais credenciados &nbsp;·&nbsp; SUS © 2024
+    </div>
+  </div>
+</div>
+</body>
+</html>

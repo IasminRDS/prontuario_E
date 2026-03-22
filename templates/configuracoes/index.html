@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block page_title %}Configurações do Sistema{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+  <!-- Dados da unidade -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+      </svg>
+      <h3>Dados da Unidade</h3>
+    </div>
+    <form method="POST">
+      <input type="hidden" name="acao" value="unidade">
+      <div class="card-body">
+        <div class="form-grid form-grid-2">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Nome da unidade <span class="obrigatorio">*</span></label>
+            <input type="text" name="nome" class="form-control"
+                   value="{{ unidade.nome if unidade else '' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CNES</label>
+            <input type="text" name="cnes" class="form-control font-mono"
+                   value="{{ unidade.cnes or '' if unidade else '' }}"
+                   placeholder="7 dígitos" maxlength="7">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-control">
+              {% for t in ['UBS','UPA','Hospital','CAPS','NASF','Centro de Especialidades','Outro'] %}
+              <option value="{{ t }}"
+                {% if unidade and unidade.tipo == t %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Endereço</label>
+            <input type="text" name="endereco" class="form-control"
+                   value="{{ unidade.endereco or '' if unidade else '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Município</label>
+            <input type="text" name="municipio" class="form-control"
+                   value="{{ unidade.municipio or '' if unidade else '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">UF</label>
+            <select name="uf" class="form-control">
+              {% for uf in ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
+                            'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] %}
+              <option value="{{ uf }}"
+                {% if unidade and unidade.uf == uf %}selected{% endif %}>{{ uf }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Telefone</label>
+            <input type="text" name="telefone" class="form-control"
+                   value="{{ unidade.telefone or '' if unidade else '' }}"
+                   placeholder="(XX) XXXX-XXXX">
+          </div>
+        </div>
+      </div>
+      <div class="card-footer" style="display:flex;justify-content:flex-end">
+        <button type="submit" class="btn btn-primary">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Alterar senha -->
+    <div class="card">
+      <div class="card-header">
+        <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+        <h3>Alterar Minha Senha</h3>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="acao" value="senha">
+        <div class="card-body">
+          <div class="form-grid form-grid-2">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Senha atual</label>
+              <input type="password" name="senha_atual" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nova senha</label>
+              <input type="password" name="nova_senha" class="form-control"
+                     placeholder="Mínimo 6 caracteres" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirmar nova senha</label>
+              <input type="password" name="confirma_senha" class="form-control" required minlength="6">
+            </div>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">Alterar Senha</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Informações do sistema -->
+    <div class="card">
+      <div class="card-header">
+        <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3>Sobre o Sistema</h3>
+      </div>
+      <div class="card-body" style="font-size:.85rem;color:var(--cinza-600)">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          {% for label, valor in [
+            ('Sistema', 'Prontuário Único SUS'),
+            ('Versão', '1.0.0'),
+            ('Usuários ativos', total_usuarios),
+            ('Usuários inativos', total_inativos),
+            ('Banco de dados', 'SQLite'),
+          ] %}
+          <div style="display:flex;justify-content:space-between;padding-bottom:8px;
+                      border-bottom:1px solid var(--cinza-100)">
+            <span style="color:var(--cinza-500)">{{ label }}</span>
+            <span class="fw-500">{{ valor }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a href="{{ url_for('backup.index') }}" class="btn btn-secondary btn-sm">
+            Gerenciar backups
+          </a>
+          <a href="{{ url_for('admin.index') }}" class="btn btn-secondary btn-sm">
+            Gerenciar usuários
+          </a>
+          <a href="{{ url_for('admin.auditoria') }}" class="btn btn-secondary btn-sm">
+            Log de auditoria
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

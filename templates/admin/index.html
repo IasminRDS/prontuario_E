@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Administração{% endblock %}
+{% block page_title %}Administração{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.novo_usuario') }}" class="btn btn-primary">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Novo Usuário
+  </a>
+  <a href="{{ url_for('admin.auditoria') }}" class="btn btn-secondary">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    Log de Auditoria
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+  <div class="stat-card azul">
+    <div class="stat-label">Total de Usuários</div>
+    <div class="stat-value">{{ usuarios|length }}</div>
+  </div>
+  <div class="stat-card verde">
+    <div class="stat-label">Ativos</div>
+    <div class="stat-value">{{ total_ativos }}</div>
+  </div>
+  <div class="stat-card cinza">
+    <div class="stat-label">Inativos</div>
+    <div class="stat-value">{{ total_inativos }}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:3fr 2fr;gap:20px">
+
+  <!-- Usuários -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <h3>Usuários do Sistema</h3>
+    </div>
+    <div class="table-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Unidade</th>
+            <th>Último acesso</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td class="fw-500">{{ u.nome }}</td>
+            <td style="font-size:.8rem;color:var(--cinza-500)">{{ u.email }}</td>
+            <td>
+              {% if u.perfil == 'admin' %}
+                <span class="badge badge-vermelho">Admin</span>
+              {% elif u.perfil == 'medico' %}
+                <span class="badge badge-azul">Médico</span>
+              {% elif u.perfil == 'enfermeiro' %}
+                <span class="badge badge-verde">Enf.</span>
+              {% else %}
+                <span class="badge badge-cinza">Recep.</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.8rem">{{ u.unidade.nome if u.unidade else '—' }}</td>
+            <td class="font-mono" style="font-size:.78rem;color:var(--cinza-400)">
+              {{ u.ultimo_acesso.strftime('%d/%m/%Y %H:%M') if u.ultimo_acesso else '—' }}
+            </td>
+            <td>
+              {% if u.ativo %}
+                <span class="badge badge-verde">Ativo</span>
+              {% else %}
+                <span class="badge badge-vermelho">Inativo</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="flex gap-8">
+                <a href="{{ url_for('admin.editar_usuario', id=u.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+                {% if u.id != current_user.id %}
+                  <a href="{{ url_for('admin.toggle_usuario', id=u.id) }}"
+                     class="btn btn-sm {% if u.ativo %}btn-danger{% else %}btn-success{% endif %}"
+                     onclick="return confirm('Confirma?')">
+                    {{ 'Desativar' if u.ativo else 'Ativar' }}
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Últimos logs -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <h3>Atividade Recente</h3>
+      <a href="{{ url_for('admin.auditoria') }}" class="btn btn-sm btn-secondary ms-auto">Ver tudo</a>
+    </div>
+    <div style="padding:0">
+      {% for log in logs_recentes %}
+      <div style="padding:10px 20px;border-bottom:1px solid var(--cinza-100);display:flex;gap:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.8rem;font-weight:500;color:var(--cinza-800)">
+            {{ log.usuario.nome if log.usuario else 'Sistema' }}
+          </div>
+          <div style="font-size:.75rem;color:var(--cinza-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            {{ log.descricao or log.acao + ' em ' + log.tabela }}
+          </div>
+          <div class="font-mono" style="font-size:.7rem;color:var(--cinza-300)">
+            {{ log.criado_em.strftime('%d/%m %H:%M') }}
+          </div>
+        </div>
+        <span class="badge {% if log.acao == 'create' %}badge-verde{% elif log.acao == 'delete' %}badge-vermelho{% elif log.acao == 'view' %}badge-cinza{% else %}badge-amarelo{% endif %}" style="flex-shrink:0">
+          {{ log.acao }}
+        </span>
+      </div>
+      {% else %}
+        <div style="padding:32px;text-align:center;color:var(--cinza-400);font-size:.85rem">
+          Nenhum registro de auditoria ainda.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

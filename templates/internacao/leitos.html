@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Leitos{% endblock %}
+{% block page_title %}Gerenciar Leitos e Setores{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('internacao.novo_setor') }}" class="btn btn-primary">+ Novo Setor</a>
+  <a href="{{ url_for('internacao.painel') }}" class="btn btn-secondary">Painel</a>
+{% endblock %}
+
+{% block content %}
+{% for setor in setores %}
+<div class="card mb-16">
+  <div class="card-header">
+    <h3>{{ setor.nome }}</h3>
+    <span class="badge badge-cinza ms-auto">{{ setor.total_leitos }} leitos</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="tabela">
+      <thead>
+        <tr><th>Leito</th><th>Tipo</th><th>Status</th><th>Paciente</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for l in setor.leitos.filter_by(ativo=True).order_by('numero').all() %}
+        {% set slabel, scor = l.status_label %}
+        <tr>
+          <td class="font-mono fw-600">{{ l.numero }}</td>
+          <td><span class="badge badge-cinza">{{ l.tipo or 'comum' }}</span></td>
+          <td><span class="badge badge-{{ scor }}">{{ slabel }}</span></td>
+          <td style="font-size:.84rem">
+            {% if l.internacao_ativa %}
+              <a href="{{ url_for('internacao.visualizar', id=l.internacao_ativa.id) }}">
+                {{ l.internacao_ativa.paciente.nome_exibicao }}
+              </a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if l.status != 'ocupado' %}
+            <form method="POST" action="{{ url_for('internacao.atualizar_leito', id=l.id) }}"
+                  style="display:flex;gap:6px">
+              <select name="status" class="form-control" style="width:160px;padding:4px 8px;font-size:.78rem;height:auto">
+                {% for val, (lbl, _) in l.STATUS_LABELS.items() %}
+                  {% if val != l.status %}
+                  <option value="{{ val }}">{{ lbl }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-sm btn-secondary">OK</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:48px;color:var(--cinza-400)">
+    Nenhum setor cadastrado. <a href="{{ url_for('internacao.novo_setor') }}">Criar primeiro setor</a>.
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
