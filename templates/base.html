@@ -6,7 +6,68 @@
   <title>{% block title %}Prontuário Único{% endblock %} — SUS</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
-    /* Estilos para categorias colapsáveis */
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* SIDEBAR - LAYOUT E ESTRUTURA */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: var(--sidebar-w);
+      background: var(--cinza-900);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 100;
+      overflow: hidden;
+      transition: transform .25s ease;
+    }
+
+    .sidebar-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--cinza-800);
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand .sus-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--sus-azul);
+      color: white;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-brand h2 {
+      color: var(--branco);
+      font-size: .95rem;
+      font-weight: 600;
+      margin-top: 10px;
+      line-height: 1.3;
+    }
+
+    .sidebar-brand p {
+      color: var(--cinza-400);
+      font-size: .72rem;
+      margin-top: 2px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+      padding-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* CATEGORIAS COLAPSÁVEIS */
+    /* ═══════════════════════════════════════════════════════════════ */
     .nav-category {
       margin-top: 16px;
     }
@@ -25,6 +86,8 @@
       border-radius: 6px;
       transition: all 0.2s ease;
       user-select: none;
+      margin-left: 8px;
+      margin-right: 8px;
     }
 
     .nav-category-header:hover {
@@ -62,13 +125,14 @@
     .nav-category-item {
       display: flex;
       align-items: center;
-      padding: 8px 12px 8px 32px;
+      padding: 9px 12px 9px 40px;
       color: #aaa;
       font-size: 0.9rem;
       text-decoration: none;
       border-radius: 4px;
       transition: all 0.2s ease;
-      margin: 2px 0;
+      margin: 2px 8px;
+      border-left: 3px solid transparent;
     }
 
     .nav-category-item:hover {
@@ -77,11 +141,149 @@
     }
 
     .nav-category-item.active {
-      background-color: rgba(59, 130, 246, 0.15);
-      color: #3b82f6;
+      background-color: rgba(0, 96, 192, 0.15);
+      color: #7abaff;
       font-weight: 500;
-      border-left: 3px solid #3b82f6;
-      padding-left: 29px;
+      border-left-color: #0060c0;
+    }
+
+    .nav-category-item svg {
+      width: 16px;
+      height: 16px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* SIDEBAR FOOTER - PAINEL DO USUÁRIO */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .sidebar-footer {
+      flex-shrink: 0;
+      padding: 16px;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(0, 96, 192, 0.05) 0%, rgba(0, 0, 0, 0.2) 100%);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ─── Info do Usuário ─── */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(0, 63, 136, 0.2), rgba(0, 96, 192, 0.15));
+      border: 1px solid rgba(0, 96, 192, 0.3);
+      border-radius: 8px;
+      backdrop-filter: blur(5px);
+    }
+
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0060c0, #003f88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 96, 192, 0.3);
+    }
+
+    .user-details {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-name {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-role {
+      color: #a0aec0;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .user-status {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+    }
+
+    /* ─── Ações (Botões) ─── */
+    .sidebar-footer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-logout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px;
+      color: #e0e7ff;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      font-family: var(--fonte-principal);
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .btn-logout:active {
+      transform: scale(0.98);
+    }
+
+    .btn-logout svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .btn-logout:hover svg {
+      opacity: 1;
+    }
+
+    /* Botão de Logout - Vermelho */
+    .btn-logout.btn-danger:hover {
+      background: rgba(192, 57, 43, 0.2);
+      border-color: rgba(192, 57, 43, 0.4);
+      color: #ff6b6b;
     }
   </style>
   {% block head %}{% endblock %}
@@ -91,6 +293,7 @@
 <div class="layout-wrapper">
 
   <aside class="sidebar" id="sidebar">
+    <!-- HEADER DA SIDEBAR -->
     <div class="sidebar-brand">
       <div class="sus-badge">
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
@@ -99,9 +302,14 @@
         SUS
       </div>
       <h2>Prontuário Único</h2>
-      <p>{{ current_user.unidade.nome if current_user.unidade else 'Sistema Nacional' }}</p>
+      {% if current_user and current_user.is_authenticated %}
+        <p>{{ current_user.unidade.nome if current_user.unidade else 'Sistema Nacional' }}</p>
+      {% else %}
+        <p>Sistema Nacional</p>
+      {% endif %}
     </div>
 
+    <!-- MENU DE NAVEGAÇÃO -->
     <nav class="sidebar-nav">
 
       <!-- PRINCIPAL -->
@@ -117,7 +325,7 @@
         <div class="nav-category-items">
           <a href="{{ url_for('dashboard.index') }}" 
              class="nav-category-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
             </svg>
@@ -127,7 +335,7 @@
           <a href="{{ url_for('notificacoes.index') }}" 
              class="nav-category-item {% if 'notificacoes' in request.endpoint %}active{% endif %}"
              id="nav-notif" style="position:relative">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
@@ -154,7 +362,7 @@
         <div class="nav-category-items">
           <a href="{{ url_for('pacientes.qrscan') }}" 
              class="nav-category-item {% if 'qrscan' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
             </svg>
@@ -162,8 +370,8 @@
           </a>
 
           <a href="{{ url_for('pacientes.index') }}" 
-             class="nav-category-item {% if 'pacientes' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+             class="nav-category-item {% if 'pacientes' in request.endpoint and request.endpoint != 'pacientes.qrscan' and request.endpoint != 'pacientes.novo' %}active{% endif %}">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
@@ -172,7 +380,7 @@
 
           <a href="{{ url_for('pacientes.novo') }}" 
              class="nav-category-item {% if request.endpoint == 'pacientes.novo' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
@@ -194,7 +402,7 @@
         <div class="nav-category-items">
           <a href="{{ url_for('agendamento.index') }}" 
              class="nav-category-item {% if 'agendamento' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
@@ -203,7 +411,7 @@
 
           <a href="{{ url_for('triagem.index') }}" 
              class="nav-category-item {% if 'triagem' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
             </svg>
@@ -225,7 +433,7 @@
         <div class="nav-category-items">
           <a href="{{ url_for('ps.painel') }}" 
              class="nav-category-item {% if 'ps.' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
             </svg>
@@ -234,7 +442,7 @@
 
           <a href="{{ url_for('internacao.painel') }}" 
              class="nav-category-item {% if 'internacao' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
             </svg>
@@ -243,7 +451,7 @@
 
           <a href="{{ url_for('cirurgia.painel') }}" 
              class="nav-category-item {% if 'cirurgia' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
             </svg>
@@ -252,51 +460,11 @@
 
           <a href="{{ url_for('encaminhamentos.painel') }}" 
              class="nav-category-item {% if 'encaminhamentos' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
             </svg>
             Encaminhamentos
-          </a>
-        </div>
-      </div>
-
-      <!-- REGULAÇÃO -->
-      <div class="nav-category">
-        <div class="nav-category-header" data-category="regulacao">
-          <span>Regulação</span>
-          <div class="nav-category-icon">
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
-        </div>
-        <div class="nav-category-items">
-          <a href="{{ url_for('regulacao.index') }}" 
-             class="nav-category-item {% if 'regulacao' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-            </svg>
-            Central de Vagas
-          </a>
-
-          <a href="{{ url_for('gestao_unidades.index') }}" 
-             class="nav-category-item {% if 'gestao_unidades' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
-            </svg>
-            Unidades
-          </a>
-
-          <a href="{{ url_for('transferencia.index') }}" 
-             class="nav-category-item {% if 'transferencia' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>
-            Transferências
           </a>
         </div>
       </div>
@@ -314,7 +482,7 @@
         <div class="nav-category-items">
           <a href="{{ url_for('exames.pendentes') }}" 
              class="nav-category-item {% if 'exames' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
             </svg>
@@ -323,7 +491,7 @@
 
           <a href="{{ url_for('vacinas.catalogo') }}" 
              class="nav-category-item {% if 'vacinas' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
             </svg>
@@ -332,7 +500,7 @@
 
           <a href="{{ url_for('medicamentos.catalogo') }}" 
              class="nav-category-item {% if 'medicamentos' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
             </svg>
@@ -341,7 +509,7 @@
 
           <a href="{{ url_for('estoque.index') }}" 
              class="nav-category-item {% if 'estoque' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
             </svg>
@@ -349,8 +517,8 @@
           </a>
 
           <a href="{{ url_for('rel_hosp.index') }}" 
-            class="nav-category-item {% if request.endpoint == 'rel_hosp.index' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+             class="nav-category-item {% if request.endpoint == 'rel_hosp.index' %}active{% endif %}">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
@@ -359,41 +527,8 @@
         </div>
       </div>
 
-      {% if current_user.pode_ver_estadual() %}
-      <!-- VISÃO ESTADUAL -->
-      <div class="nav-category">
-        <div class="nav-category-header" data-category="estadual">
-          <span>Visão Estadual</span>
-          <div class="nav-category-icon">
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
-        </div>
-        <div class="nav-category-items">
-          <a href="{{ url_for('rel_estadual.index') }}" 
-             class="nav-category-item {% if request.endpoint == 'rel_estadual.index' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0110.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Painel Estadual
-          </a>
-
-          <a href="{{ url_for('rel_estadual.consolidado') }}" 
-             class="nav-category-item {% if request.endpoint == 'rel_estadual.consolidado' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Rel. Consolidado
-          </a>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if current_user.is_admin() %}
       <!-- ADMINISTRAÇÃO -->
+      {% if current_user and current_user.is_authenticated and current_user.is_admin() %}
       <div class="nav-category">
         <div class="nav-category-header" data-category="admin">
           <span>Administração</span>
@@ -404,18 +539,9 @@
           </div>
         </div>
         <div class="nav-category-items">
-          <a href="{{ url_for('relatorios.index') }}" 
-             class="nav-category-item {% if 'relatorios' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Relatórios
-          </a>
-
           <a href="{{ url_for('faturamento.aih_lista') }}" 
              class="nav-category-item {% if 'faturamento' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
             </svg>
@@ -424,7 +550,7 @@
 
           <a href="{{ url_for('importar.pacientes') }}" 
              class="nav-category-item {% if 'importar' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"/>
             </svg>
@@ -433,7 +559,7 @@
 
           <a href="{{ url_for('backup.index') }}" 
              class="nav-category-item {% if 'backup' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
             </svg>
@@ -442,7 +568,7 @@
 
           <a href="{{ url_for('configuracoes.index') }}" 
              class="nav-category-item {% if 'configuracoes' in request.endpoint %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -452,7 +578,7 @@
 
           <a href="{{ url_for('admin.index') }}" 
              class="nav-category-item {% if request.endpoint in ('admin.index','admin.novo_usuario','admin.editar_usuario') %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
@@ -461,7 +587,7 @@
 
           <a href="{{ url_for('admin.auditoria') }}" 
              class="nav-category-item {% if request.endpoint == 'admin.auditoria' %}active{% endif %}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 8px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
@@ -473,31 +599,42 @@
 
     </nav>
 
+    <!-- PAINEL DO USUÁRIO - FOOTER -->
+    {% if current_user and current_user.is_authenticated %}
     <div class="sidebar-footer">
+      <!-- Info do Usuário Logado -->
       <div class="user-info">
-        <div class="user-avatar">{{ current_user.nome[0].upper() }}</div>
-        <div>
-          <div class="user-name">{{ current_user.nome.split()[0] }}</div>
-          <div class="user-role">{{ current_user.perfil|capitalize }}</div>
+        <div class="user-avatar">{{ current_user.nome[0].upper() if current_user.nome else 'U' }}</div>
+        <div class="user-details">
+          <div class="user-name">{{ current_user.nome.split()[0] if current_user.nome else 'Usuário' }}</div>
+          <div class="user-role">{{ current_user.perfil|capitalize if current_user.perfil else 'Anônimo' }}</div>
         </div>
+        <div class="user-status"></div>
       </div>
-      <a href="{{ url_for('auth.logout') }}" class="btn-logout">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-        </svg>
-        Sair do sistema
-      </a>
-      <a href="{{ url_for('configuracoes.minha_senha') }}" class="btn-logout" style="margin-top:2px">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-        </svg>
-        Alterar senha
-      </a>
+
+      <!-- Botões de Ação -->
+      <div class="sidebar-footer-actions">
+        <a href="{{ url_for('configuracoes.minha_senha') }}" class="btn-logout" title="Alterar sua senha">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+          Alterar Senha
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn-logout btn-danger" title="Fazer logout">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sair do Sistema
+        </a>
+      </div>
     </div>
+    {% endif %}
+
   </aside>
 
+  <!-- CONTEÚDO PRINCIPAL -->
   <div class="main-content">
     <header class="topbar">
       <span class="topbar-title">{% block page_title %}{% endblock %}</span>
@@ -523,46 +660,43 @@
   </div>
 </div>
 
+<!-- SCRIPTS -->
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 <script>
-// Gerenciamento de categorias colapsáveis
+// ═══════════════════════════════════════════════════════════════
+// GERENCIAMENTO DE CATEGORIAS COLAPSÁVEIS
+// ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
   const categoryHeaders = document.querySelectorAll('.nav-category-header');
-  
-  // Recuperar estado armazenado no localStorage
   const savedState = JSON.parse(localStorage.getItem('navCategories') || '{}');
   
-  // Aplicar estado armazenado
+  // Aplicar estado salvo ao carregar
   categoryHeaders.forEach(header => {
     const category = header.getAttribute('data-category');
     const navCategory = header.parentElement;
     
-    // Se não houver estado salvo, todas as categorias começam expandidas
     if (savedState[category] === undefined) {
-      savedState[category] = false; // false = expandido, true = colapsado
+      savedState[category] = false; // expandido por padrão
     }
     
-    // Aplicar o estado
     if (savedState[category]) {
       navCategory.classList.add('collapsed');
     }
   });
   
-  // Listeners para cliques
+  // Listener para cliques
   categoryHeaders.forEach(header => {
     header.addEventListener('click', function() {
       const navCategory = this.parentElement;
       const category = this.getAttribute('data-category');
       
       navCategory.classList.toggle('collapsed');
-      
-      // Salvar estado no localStorage
       savedState[category] = navCategory.classList.contains('collapsed');
       localStorage.setItem('navCategories', JSON.stringify(savedState));
     });
   });
   
-  // Se houver um link ativo, expandir sua categoria
+  // Expandir categoria ativa
   const activeLink = document.querySelector('.nav-category-item.active');
   if (activeLink) {
     const navCategory = activeLink.closest('.nav-category');
@@ -575,7 +709,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Badge de notificações — atualiza a cada 2 min
+// ═══════════════════════════════════════════════════════════════
+// BADGE DE NOTIFICAÇÕES
+// ═══════════════════════════════════════════════════════════════
 function atualizarBadgeNotif() {
   fetch('/notificacoes/api')
     .then(r => r.json())
@@ -598,7 +734,7 @@ function atualizarBadgeNotif() {
     .catch(() => {});
 }
 atualizarBadgeNotif();
-setInterval(atualizarBadgeNotif, 120000);
+setInterval(atualizarBadgeNotif, 120000); // Atualiza a cada 2 minutos
 </script>
 {% block scripts %}{% endblock %}
 </body>

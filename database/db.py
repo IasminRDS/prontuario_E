@@ -168,7 +168,7 @@ def init_db(app):
             from models.predicao import Predicao
             print("  ✓ Predicao")
         except ImportError:
-            print("  ⚠️  Predicão não carregada (opcional)")
+            print("  ⚠️  Predicção não carregada (opcional)")
         
         try:
             from models.vaga import Vaga, SolicitacaoTransferencia
@@ -177,16 +177,10 @@ def init_db(app):
             print("  ⚠️  Vagas não carregadas (opcional)")
         
         try:
-            from models.localizacao import Localizacao, AcessibilidadeRegiao, DemandaPorRegiao
-            print("  ✓ Localizacao, AcessibilidadeRegiao, DemandaPorRegiao")
-        except ImportError:
-            print("  ⚠️  Localização não carregada (opcional)")
-        
-        try:
-            from models.faturamento_sia_sih import Faturamento, ProcessoFaturamento
-            print("  ✓ Faturamento (SIA/SIH), ProcessoFaturamento")
-        except ImportError:
-            print("  ⚠️  Faturamento SIA/SIH não carregado (opcional)")
+            from models.faturamento_sia_sih import Faturamento, ProcessoFaturamentoSIH, ProcessoFaturamentoSIA
+            print("  ✓ Faturamento (SIA/SIH), ProcessoFaturamentoSIH, ProcessoFaturamentoSIA")
+        except ImportError as e:
+            print(f"  ⚠️  Faturamento SIA/SIH: {e}")
         
         try:
             from models.telemedicina import ConsultaTelemedicina, MonitoramentoPaciente
@@ -195,7 +189,7 @@ def init_db(app):
             print("  ⚠️  Telemedicina não carregada (opcional)")
         
         try:
-            from routes.api_notificacoes_push import SubscricaoPush
+            from models.notificacao import SubscricaoPush
             print("  ✓ SubscricaoPush")
         except ImportError:
             print("  ⚠️  Push Notifications não carregadas (opcional)")
