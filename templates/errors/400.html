@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>400 - Requisição Inválida | Prontuário Único SUS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .error-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 60px 40px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .error-icon {
+            width: 120px;
+            height: 120px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 60px;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+        
+        .error-code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .error-title {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .error-details {
+            background: #f8f9fa;
+            border-left: 4px solid #ff6b6b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #555;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .suggestions {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .suggestions h4 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .suggestions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .suggestions li {
+            color: #34495e;
+            margin-bottom: 8px;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+        }
+        
+        .suggestions li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 2px solid #bdc3c7;
+        }
+        
+        .btn-secondary:hover {
+            background: #bdc3c7;
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            border-top: 1px solid #ecf0f1;
+            padding-top: 20px;
+            color: #95a5a6;
+            font-size: 12px;
+        }
+        
+        .footer-icon {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        @media (max-width: 600px) {
+            .error-container {
+                padding: 40px 20px;
+            }
+            
+            .error-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 50px;
+            }
+            
+            .error-code {
+                font-size: 36px;
+            }
+            
+            .error-title {
+                font-size: 22px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <div class="error-code">400</div>
+        <h1 class="error-title">Requisição Inválida</h1>
+        
+        <p class="error-message">
+            Desculpe! A requisição enviada está malformada ou contém dados inválidos.
+        </p>
+        
+        {% if error %}
+        <div class="error-details">
+            <strong>Detalhes:</strong><br>
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <div class="suggestions">
+            <h4>📋 O que pode ter acontecido:</h4>
+            <ul>
+                <li>Dados enviados em formato incorreto</li>
+                <li>Parâmetros obrigatórios faltando</li>
+                <li>Caracteres inválidos nos dados</li>
+                <li>Requisição HTTP malformada</li>
+            </ul>
+        </div>
+        
+        <div class="button-group">
+            <a href="/" class="btn btn-primary">🏠 Voltar ao Início</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">← Voltar</a>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-icon">📞</div>
+            <p>Se o problema persistir, contate o suporte técnico</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -3,37 +3,95 @@
 Sistema de Prontuário Único - SUS
 Painel Estadual Integrado com IA
 Author: GitHub Copilot
-Version: 1.0.0
+Version: 2.0.0
+Enhanced with dynamic features, error handling, and professional logging
 """
 
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify, request
+from flask_cors import CORS
 from database.db import db, login_manager, init_db
 from config import get_config
 import os
 import sys
+import logging
 from datetime import datetime
+from functools import wraps
+
+# ========== CONFIGURAÇÃO DE LOGGING ==========
+def setup_logging(app):
+    """Configura logging profissional com múltiplos handlers"""
+    if not app.debug:
+        # Criar diretório de logs se não existir
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        
+        # Handler para arquivo
+        from logging.handlers import RotatingFileHandler
+        file_handler = RotatingFileHandler(
+            'logs/prontuario.log',
+            maxBytes=10240000,  # 10MB
+            backupCount=10
+        )
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [%(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        
+        # Handler para erros críticos
+        error_handler = RotatingFileHandler(
+            'logs/errors.log',
+            maxBytes=5120000,  # 5MB
+            backupCount=10
+        )
+        error_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [%(pathname)s:%(lineno)d]'
+        ))
+        error_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(error_handler)
+        
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('=' * 60)
+        app.logger.info('SISTEMA DE PRONTUÁRIO ÚNICO - SUS')
+        app.logger.info(f'Iniciado em: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}')
+        app.logger.info('=' * 60)
+
 
 def create_app():
-    """Factory pattern para criar a aplicação Flask"""
+    """Factory pattern para criar a aplicação Flask com configurações otimizadas"""
     app = Flask(__name__)
     
-    # ========== CONFIGURAÇÕES ==========
+    # ========== CONFIGURAÇÕES BÁSICAS ==========
     config_class = get_config()
     app.config.from_object(config_class)
     
+    # CORS para APIs
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    
     # Inicializar extensões
     init_db(app)
+    setup_logging(app)
     
-    print("\n" + "="*60)
-    print("  SISTEMA DE PRONTUÁRIO ÚNICO - SUS")
-    print("  Painel Estadual Integrado")
-    print("="*60 + "\n")
+    # ========== BANNER DE INICIALIZAÇÃO ==========
+    banner = """
+    ╔════════════════════════════════════════════════════════════╗
+    ║  🏥 SISTEMA DE PRONTUÁRIO ÚNICO - SUS                      ║
+    ║  📊 Painel Estadual Integrado com IA                       ║
+    ║  ✨ Versão 2.0.0                                           ║
+    ║  🚀 Status: Pronto para Operação                           ║
+    ╚════════════════════════════════════════════════════════════╝
+    """
+    print(banner)
     
     # ========== LOGIN MANAGER ==========
     @login_manager.user_loader
     def load_user(user_id):
         from models.user import User
         return User.query.get(int(user_id))
+    
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        return jsonify({"error": "Não autenticado"}), 401
     
     # ========== REGISTRAR BLUEPRINTS ==========
     
@@ -68,7 +126,7 @@ def create_app():
     from routes.gestao_unidades import gestao_unidades_bp
     from routes.relatorio_estadual import rel_estadual_bp
     
-    # Novas APIs (Novos Módulos)
+    # Novas APIs
     from routes.api_kpi import api_kpi_bp
     from routes.api_alertas import api_alertas_bp
     from routes.api_predicoes import api_predicoes_bp
@@ -76,7 +134,7 @@ def create_app():
     from routes.api_vagas import api_vagas_bp
     from routes.api_geo import api_geo_bp
     
-    # Registrar todos os blueprints
+    # Lista de blueprints para registro dinâmico
     blueprints = [
         # Rotas principais
         auth_bp, pacientes_bp, prontuario_bp, dashboard_bp, pdf_bp, admin_bp,
@@ -90,10 +148,14 @@ def create_app():
         api_permissoes_bp, api_vagas_bp, api_geo_bp
     ]
     
-    print("📚 Registrando blueprints...")
+    print(f"\n📚 Registrando {len(blueprints)} blueprints...")
     for blueprint in blueprints:
-        app.register_blueprint(blueprint)
-        print(f"  ✓ {blueprint.name}")
+        try:
+            app.register_blueprint(blueprint)
+            print(f"  ✓ {blueprint.name:30} | Prefixo: {blueprint.url_prefix or 'raiz'}")
+        except Exception as e:
+            print(f"  ✗ {blueprint.name:30} | Erro: {e}")
+            app.logger.error(f"Erro ao registrar blueprint {blueprint.name}: {e}")
     
     # ========== INICIALIZAR BANCO DE DADOS ==========
     print("\n🗄️  Inicializando banco de dados...")
@@ -109,9 +171,10 @@ def create_app():
                 seed_permissoes()
                 print("  ✓ Permissões carregadas")
             except Exception as e:
-                print(f"  ⚠️  Erro ao carregar permissões: {e}")
+                print(f"  ⚠️  Permissões: {e}")
+                app.logger.warning(f"Erro ao carregar permissões: {e}")
             
-            # 3. Seed de vagas (opcional)
+            # 3. Seed de vagas
             try:
                 from models.vaga import Vaga
                 if Vaga.query.count() == 0:
@@ -119,7 +182,8 @@ def create_app():
                     seed_vagas()
                     print("  ✓ Vagas de teste carregadas")
             except Exception as e:
-                print(f"  ⚠️  Erro ao carregar vagas: {e}")
+                print(f"  ⚠️  Vagas: {e}")
+                app.logger.warning(f"Erro ao carregar vagas: {e}")
             
             # 4. Otimizar SQLite
             if 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']:
@@ -128,6 +192,7 @@ def create_app():
                 print("  ✓ SQLite otimizado")
         except Exception as e:
             print(f"  ✗ Erro ao inicializar banco: {e}")
+            app.logger.critical(f"Erro crítico ao inicializar banco: {e}")
             sys.exit(1)
     
     # ========== INICIAR SCHEDULER (Background Tasks) ==========
@@ -137,56 +202,176 @@ def create_app():
             from tasks.scheduler import agendar_tarefas
             agendar_tarefas(app)
             print("  ✓ Scheduler iniciado")
-            print("    - KPIs (a cada hora)")
-            print("    - Alertas (a cada 30 minutos)")
-            print("    - Predições (diariamente 23:00)")
-            print("    - Demanda (a cada hora)")
+            print("    ├─ KPIs (a cada hora)")
+            print("    ├─ Alertas (a cada 30 minutos)")
+            print("    ├─ Predições (diariamente 23:00)")
+            print("    └─ Demanda (a cada hora)")
         except Exception as e:
             print(f"  ⚠️  Scheduler não iniciou: {e}")
+            app.logger.warning(f"Scheduler não iniciou: {e}")
     
-    # ========== ERROR HANDLERS ==========
+    # ========== ERRO HANDLERS - 4XX ==========
+    
+    @app.errorhandler(400)
+    def bad_request(e):
+        """Requisição inválida/malformada"""
+        app.logger.warning(f"400 Bad Request: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Requisição inválida"}), 400
+        return render_template('errors/400.html', error=str(e)), 400
+    
     @app.errorhandler(401)
     def unauthorized(e):
-        return render_template('errors/401.html'), 401
+        """Usuário não autenticado"""
+        app.logger.warning(f"401 Unauthorized: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Não autenticado"}), 401
+        return render_template('errors/401.html', error=str(e)), 401
     
     @app.errorhandler(403)
     def forbidden(e):
-        return render_template('errors/403.html'), 403
+        """Acesso não autorizado"""
+        app.logger.warning(f"403 Forbidden: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Acesso proibido"}), 403
+        return render_template('errors/403.html', error=str(e)), 403
     
     @app.errorhandler(404)
     def not_found(e):
-        return render_template('errors/404.html'), 404
+        """Recurso não encontrado"""
+        app.logger.info(f"404 Not Found: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Recurso não encontrado"}), 404
+        return render_template('errors/404.html', error=str(e)), 404
+    
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        """Método HTTP não permitido"""
+        app.logger.warning(f"405 Method Not Allowed: {request.method} {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Método não permitido"}), 405
+        return render_template('errors/405.html', error=str(e)), 405
+    
+    @app.errorhandler(408)
+    def request_timeout(e):
+        """Timeout na requisição"""
+        app.logger.error(f"408 Request Timeout: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Requisição expirou"}), 408
+        return render_template('errors/408.html', error=str(e)), 408
+    
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        """Muitas requisições - Rate limit"""
+        app.logger.warning(f"429 Too Many Requests: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Muitas requisições"}), 429
+        return render_template('errors/429.html', error=str(e)), 429
+    
+    # ========== ERRO HANDLERS - 5XX ==========
     
     @app.errorhandler(500)
     def server_error(e):
-        return render_template('errors/500.html'), 500
+        """Erro interno do servidor"""
+        app.logger.error(f"500 Internal Server Error: {request.path}", exc_info=True)
+        if request.is_json:
+            return jsonify({"error": "Erro interno do servidor"}), 500
+        return render_template('errors/500.html', error=str(e)), 500
+    
+    @app.errorhandler(501)
+    def not_implemented(e):
+        """Funcionalidade não implementada"""
+        app.logger.warning(f"501 Not Implemented: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Não implementado"}), 501
+        return render_template('errors/501.html', error=str(e)), 501
+    
+    @app.errorhandler(502)
+    def bad_gateway(e):
+        """Gateway inválido"""
+        app.logger.error(f"502 Bad Gateway: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Gateway inválido"}), 502
+        return render_template('errors/502.html', error=str(e)), 502
+    
+    @app.errorhandler(503)
+    def service_unavailable(e):
+        """Serviço indisponível"""
+        app.logger.error(f"503 Service Unavailable: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Serviço indisponível"}), 503
+        return render_template('errors/503.html', error=str(e)), 503
+    
+    @app.errorhandler(504)
+    def gateway_timeout(e):
+        """Timeout do gateway"""
+        app.logger.error(f"504 Gateway Timeout: {request.path}")
+        if request.is_json:
+            return jsonify({"error": "Timeout do gateway"}), 504
+        return render_template('errors/504.html', error=str(e)), 504
     
     # ========== CONTEXT PROCESSORS ==========
     @app.context_processor
     def inject_user():
+        """Injeta usuário atual no contexto de templates"""
         from flask_login import current_user
         return dict(current_user=current_user)
     
     @app.context_processor
     def inject_config():
+        """Injeta configurações da aplicação no contexto"""
         return dict(
             app_name="Prontuário Único SUS",
-            app_version="1.0.0"
+            app_version="2.0.0",
+            year=datetime.now().year
         )
     
-    # ========== LOGGING ==========
-    if not app.debug:
-        import logging
-        from logging.handlers import RotatingFileHandler
+    # ========== REQUEST HOOKS ==========
+    @app.before_request
+    def before_request():
+        """Hook executado antes de cada requisição"""
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            current_user.last_activity = datetime.now()
+            db.session.commit()
+    
+    @app.after_request
+    def after_request(response):
+        """Hook executado após cada requisição"""
+        # Headers de segurança
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        return response
+    
+    # ========== ROTAS UTILITÁRIAS ==========
+    
+    @app.route('/health')
+    def health():
+        """Verifica a saúde da aplicação"""
+        return jsonify({
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "version": "2.0.0"
+        }), 200
+    
+    @app.route('/api/status')
+    def api_status():
+        """Status da API em JSON"""
+        try:
+            # Teste de banco de dados
+            from models.user import User
+            User.query.first()
+            db_status = "ok"
+        except:
+            db_status = "error"
         
-        file_handler = RotatingFileHandler('prontuario.log', maxBytes=10240000, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Prontuário iniciado')
+        return jsonify({
+            "status": "running",
+            "database": db_status,
+            "timestamp": datetime.now().isoformat(),
+            "version": "2.0.0"
+        }), 200
     
     print("\n" + "="*60)
     print("  ✓✓✓ SISTEMA PRONTO PARA OPERAÇÃO ✓✓✓")
@@ -194,8 +379,10 @@ def create_app():
     
     return app
 
+
 # ========== FACTORY - Cria a app ==========
 app = create_app()
+
 
 # ========== PONTO DE ENTRADA - Railway/Render/Gunicorn ==========
 if __name__ == '__main__':
@@ -213,7 +400,8 @@ if __name__ == '__main__':
     print(f"\n{env_str}")
     print(f"🌐 Servidor: {host}:{port}")
     print(f"📍 URL: http://localhost:{port}")
-    print(f"⏰ Iniciado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+    print(f"⏰ Iniciado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"📋 Debug: {'Ativado' if debug else 'Desativado'}\n")
     
     # Iniciar servidor
     try:
@@ -229,4 +417,5 @@ if __name__ == '__main__':
         sys.exit(0)
     except Exception as e:
         print(f"\n❌ Erro ao iniciar servidor: {e}")
+        app.logger.critical(f"Erro crítico ao iniciar servidor: {e}", exc_info=True)
         sys.exit(1)
