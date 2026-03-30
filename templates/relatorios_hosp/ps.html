@@ -3,7 +3,7 @@
 {% block page_title %}Relatório Pronto-Socorro{% endblock %}
 {% block topbar_actions %}
   <a href="{{ url_for('rel_hosp.index') }}" class="btn btn-secondary">Voltar</a>
-  <a href="{{ request.url }}&exportar=csv" class="btn btn-secondary">Exportar CSV</a>
+  <a href="{{ request.url }}{{ url_for("rel_hosp.relatorio_ps", data_ini=data_ini, data_fim=data_fim, exportar="csv") }}exportar=csv" if "?" in request.url else "{{ request.url }}?exportar=csv" class="btn btn-secondary">Exportar CSV</a>
 {% endblock %}
 {% block content %}
 <form method="GET" class="card mb-20">

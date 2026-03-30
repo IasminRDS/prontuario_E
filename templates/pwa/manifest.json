@@ -1,0 +1,72 @@
+{
+  "name": "Prontuário Único SUS",
+  "short_name": "SUS Prontuário",
+  "description": "Sistema de prontuário eletrônico e painel estadual SUS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#003F88",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/img/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["healthcare", "medical"],
+  "shortcuts": [
+    {
+      "name": "Novo Atendimento",
+      "short_name": "Atendimento",
+      "description": "Registrar novo atendimento",
+      "url": "/atendimento/novo",
+      "icons": [
+        {
+          "src": "/static/img/icon-atendimento.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Central de Vagas",
+      "short_name": "Vagas",
+      "description": "Visualizar vagas disponíveis",
+      "url": "/vagas/painel",
+      "icons": [
+        {
+          "src": "/static/img/icon-vagas.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "titulo",
+      "text": "texto",
+      "url": "url",
+      "files": [
+        {
+          "name": "arquivo",
+          "accept": ["image/*", "application/pdf"]
+        }
+      ]
+    }
+  }
+}

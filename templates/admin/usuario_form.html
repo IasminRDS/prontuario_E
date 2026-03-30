@@ -38,7 +38,7 @@
           <div class="form-group">
             <label class="form-label">Perfil de acesso <span class="obrigatorio">*</span></label>
             <select name="perfil" class="form-control" required>
-              {% for p, label in [('recepcionista','Recepcionista'),('enfermeiro','Enfermeiro(a)'),('medico','Médico(a)'),('admin','Administrador')] %}
+              {% for p, label in [('recepcionista','Recepcionista'),('enfermeiro','Enfermeiro(a)'),('medico','Médico(a)'),('admin','Administrador'),('gestor_estadual','Gestor Estadual')] %}
               <option value="{{ p }}" {% if usuario and usuario.perfil == p %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>

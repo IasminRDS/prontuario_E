@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Gestão de Unidades{% endblock %}
+{% block page_title %}Gestão de Unidades de Saúde{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('gestao_unidades.nova') }}" class="btn btn-primary">+ Nova Unidade</a>
+{% endblock %}
+{% block content %}
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+  <div class="stat-card azul"><div class="stat-label">Unidades ativas</div><div class="stat-value">{{ total_ativas }}</div></div>
+  <div class="stat-card cinza"><div class="stat-label">Inativas</div><div class="stat-value">{{ total_inativas }}</div></div>
+  <div class="stat-card verde"><div class="stat-label">Total</div><div class="stat-value">{{ total_ativas + total_inativas }}</div></div>
+</div>
+<div class="card">
+  <div class="table-wrapper"><table class="tabela">
+    <thead><tr><th>Nome</th><th>Tipo</th><th>Município/UF</th><th>CNES</th><th>Usuários</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for u in unidades %}
+      <tr>
+        <td class="fw-500">{{ u.nome }}</td>
+        <td><span class="badge badge-cinza">{{ u.tipo or '—' }}</span></td>
+        <td style="font-size:.84rem">{{ u.municipio or '—' }}{% if u.uf %}/{{ u.uf }}{% endif %}</td>
+        <td class="font-mono" style="font-size:.82rem">{{ u.cnes or '—' }}</td>
+        <td class="font-mono">{{ stats[u.id].usuarios }}</td>
+        <td><span class="badge badge-{% if u.ativo %}verde{% else %}cinza{% endif %}">{% if u.ativo %}Ativa{% else %}Inativa{% endif %}</span></td>
+        <td>
+          <div class="flex gap-8">
+            <a href="{{ url_for('gestao_unidades.editar', id=u.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+            <a href="{{ url_for('gestao_unidades.usuarios', id=u.id) }}" class="btn btn-sm btn-secondary">Usuários</a>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--cinza-400)">Nenhuma unidade.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

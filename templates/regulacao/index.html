@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Regulação de Leitos{% endblock %}
+{% block page_title %}Central de Regulação de Leitos{% endblock %}
+{% block topbar_actions %}
+  <span style="font-size:.8rem;color:var(--cinza-400)">
+    {{ total_livres }} leitos livres de {{ total_leitos }} total
+  </span>
+  <button onclick="location.reload()" class="btn btn-secondary">Atualizar</button>
+{% endblock %}
+{% block content %}
+
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+  <div class="stat-card azul"><div class="stat-label">Total de leitos</div><div class="stat-value">{{ total_leitos }}</div></div>
+  <div class="stat-card verde"><div class="stat-label">Leitos livres</div><div class="stat-value">{{ total_livres }}</div></div>
+  <div class="stat-card" style="border-left:4px solid var(--sus-vermelho)"><div class="stat-label">Ocupados</div><div class="stat-value" style="color:var(--sus-vermelho)">{{ total_ocupados }}</div></div>
+  <div class="stat-card amarelo"><div class="stat-label">Taxa estadual</div><div class="stat-value">{{ taxa_estado }}%</div></div>
+</div>
+
+<!-- Filtros -->
+<form method="GET" class="card mb-20">
+  <div class="card-body" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div class="form-group" style="min-width:160px">
+      <label class="form-label">Tipo de setor</label>
+      <select name="tipo" class="form-control">
+        <option value="">Todos</option>
+        {% for v, l in [('uti','UTI'),('semi_intensivo','Semi-intensivo'),('enfermaria','Enfermaria'),('ps','PS'),('cirurgia','Cirurgia'),('recuperacao','Recuperação')] %}
+        <option value="{{ v }}" {% if tipo_filtro==v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="min-width:160px">
+      <label class="form-label">Município</label>
+      <select name="municipio" class="form-control">
+        <option value="">Todos</option>
+        {% for m in municipios %}<option value="{{ m }}" {% if mun_filtro==m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{{ url_for('regulacao.index') }}" class="btn btn-secondary">Limpar</a>
+  </div>
+</form>
+
+<!-- Transferências aguardando vaga -->
+{% if transferencias_pendentes %}
+<div class="card mb-20" style="border-left:4px solid var(--sus-amarelo)">
+  <div class="card-header"><h3>Pacientes aguardando vaga ({{ transferencias_pendentes|length }})</h3></div>
+  <div class="table-wrapper"><table class="tabela">
+    <thead><tr><th>Paciente</th><th>Origem</th><th>Destino solicitado</th><th>Prioridade</th><th>Status</th><th>Solicitado</th></tr></thead>
+    <tbody>
+      {% for t in transferencias_pendentes %}
+      {% set slbl, scor = t.status_label %}
+      {% set plbl, pcor = t.prioridade_label %}
+      <tr>
+        <td class="fw-500">{{ t.paciente.nome_exibicao }}</td>
+        <td style="font-size:.84rem">{{ t.unidade_origem.nome }}</td>
+        <td style="font-size:.84rem">{{ t.unidade_destino.nome }}</td>
+        <td><span class="badge badge-{{ pcor }}">{{ plbl }}</span></td>
+        <td><span class="badge badge-{{ scor }}">{{ slbl }}</span></td>
+        <td class="font-mono" style="font-size:.8rem">{{ t.data_solicitacao.strftime('%d/%m %H:%M') }}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+
+<!-- Mapa de leitos por unidade -->
+{% for m in mapa | sort(attribute='taxa', reverse=True) %}
+<div class="card mb-16">
+  <div class="card-header" style="border-left:4px solid {% if m.taxa>=90 %}var(--sus-vermelho){% elif m.taxa>=70 %}var(--sus-amarelo){% else %}var(--sus-verde){% endif %}">
+    <div>
+      <div class="fw-600">{{ m.unidade.nome }}</div>
+      <div style="font-size:.74rem;color:var(--cinza-400)">{{ m.unidade.municipio }}/{{ m.unidade.uf }}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <div style="text-align:right">
+        <div style="font-size:1.1rem;font-weight:700;color:{% if m.taxa>=90 %}var(--sus-vermelho){% elif m.taxa>=70 %}var(--sus-amarelo){% else %}var(--sus-verde){% endif %}">{{ m.taxa }}%</div>
+        <div style="font-size:.7rem;color:var(--cinza-400)">{{ m.ocupados }}/{{ m.total }} leitos</div>
+      </div>
+      <div style="width:60px;background:var(--cinza-100);border-radius:100px;height:8px;overflow:hidden">
+        <div style="height:100%;border-radius:100px;width:{{ m.taxa }}%;background:{% if m.taxa>=90 %}var(--sus-vermelho){% elif m.taxa>=70 %}var(--sus-amarelo){% else %}var(--sus-verde){% endif %}"></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--cinza-100)">
+    {% for s in m.setores %}
+    <div style="flex:1;min-width:120px;padding:10px 14px;border-right:1px solid var(--cinza-100);text-align:center">
+      <div style="font-size:.72rem;color:var(--cinza-500);margin-bottom:3px">{{ s.nome }}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:{% if s.livres==0 %}var(--sus-vermelho){% elif s.taxa>=70 %}var(--sus-amarelo){% else %}var(--sus-verde){% endif %}">
+        {{ s.livres }} livres
+      </div>
+      <div style="font-size:.7rem;color:var(--cinza-400)">{{ s.total }} total · {{ s.taxa }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--cinza-400)">Nenhuma unidade com setores cadastrados.</div></div>
+{% endfor %}
+{% endblock %}

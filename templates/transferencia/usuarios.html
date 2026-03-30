@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Usuários — {{ unidade.nome }}{% endblock %}
+{% block page_title %}Usuários — {{ unidade.nome }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('gestao_unidades.index') }}" class="btn btn-secondary">Voltar</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3>{{ users|length }} usuário(s)</h3>
+  </div>
+  <div class="table-wrapper"><table class="tabela">
+    <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Último acesso</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td class="fw-500">{{ u.nome }}</td>
+        <td style="font-size:.84rem">{{ u.email }}</td>
+        <td><span class="badge badge-cinza">{{ u.perfil|capitalize }}</span></td>
+        <td class="font-mono" style="font-size:.8rem">{{ u.ultimo_acesso.strftime('%d/%m/%Y') if u.ultimo_acesso else '—' }}</td>
+        <td><span class="badge badge-{% if u.ativo %}verde{% else %}cinza{% endif %}">{% if u.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--cinza-400)">Nenhum usuário.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

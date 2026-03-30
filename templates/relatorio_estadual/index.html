@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Relatórios Estaduais{% endblock %}
+{% block page_title %}Relatórios Estaduais{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Voltar ao Painel</a>
+{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+  
+  <!-- Card Painel Estadual -->
+  <div class="card" style="cursor: pointer;" onclick="location.href='{{ url_for('rel_estadual.painel') }}'">
+    <div class="card-header">
+      <h3>Painel Estadual</h3>
+    </div>
+    <div class="card-body">
+      <p style="color: var(--cinza-400); margin-bottom: 12px;">
+        Dashboard em tempo real com indicadores principais da rede.
+      </p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="badge badge-verde">Taxa Ocupação</span>
+        <span class="badge badge-verde">Capacidade</span>
+        <span class="badge badge-verde">Performance</span>
+      </div>
+    </div>
+    <div class="card-footer" style="text-align: right;">
+      <a href="{{ url_for('rel_estadual.painel') }}" class="btn btn-primary btn-sm">Acessar</a>
+    </div>
+  </div>
+
+  <!-- Card Relatório Consolidado -->
+  <div class="card" style="cursor: pointer;" onclick="location.href='{{ url_for('rel_estadual.consolidado') }}'">
+    <div class="card-header">
+      <h3>Relatório Consolidado</h3>
+    </div>
+    <div class="card-body">
+      <p style="color: var(--cinza-400); margin-bottom: 12px;">
+        Visualize estatísticas agregadas de todas as unidades da rede estadual.
+      </p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="badge badge-azul">Atendimentos</span>
+        <span class="badge badge-azul">Internações</span>
+        <span class="badge badge-azul">Transferências</span>
+        <span class="badge badge-azul">Ocupação</span>
+      </div>
+    </div>
+    <div class="card-footer" style="text-align: right;">
+      <a href="{{ url_for('rel_estadual.consolidado') }}" class="btn btn-primary btn-sm">Acessar</a>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .badge-verde { background: var(--sus-verde); color: white; }
+  .badge-azul { background: var(--sus-azul); color: white; }
+</style>
+
+{% endblock %}

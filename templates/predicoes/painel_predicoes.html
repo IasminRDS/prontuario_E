@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Predições{% endblock %}
+{% block page_title %}Predições — Previsão de Demanda{% endblock %}
+{% block topbar_actions %}
+  <button class="btn btn-primary" onclick="atualizarPred icoes()">Atualizar</button>
+{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;margin-bottom:24px">
+  
+  <div class="card">
+    <div class="card-header">
+      <h3>Previsão de Ocupação (7 dias)</h3>
+    </div>
+    <div class="card-body">
+      <div id="chart-pred-ocupacao" style="height:300px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Previsão de Atendimentos (7 dias)</h3>
+    </div>
+    <div class="card-body">
+      <div id="chart-pred-atendimentos" style="height:300px"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DETALHES DAS PREDIÇÕES -->
+<div class="card">
+  <div class="card-header">
+    <h3>Próximos 7 Dias</h3>
+  </div>
+  <div class="table-wrapper">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Ocupação Predita</th>
+          <th>Margem de Erro</th>
+          <th>Atendimentos Preditos</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-predicoes"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.45.0/apexcharts.min.js"></script>
+<script>
+async function atualizarPredicoes() {
+  try {
+    const respOcup = await fetch(`/api/predicoes/ocupacao/{{ current_user.unidade_id }}`);
+    const dataOcup = await respOcup.json();
+    
+    const respAtend = await fetch(`/api/predicoes/atendimentos/{{ current_user.unidade_id }}`);
+    const dataAtend = await respAtend.json();
+    
+    // Gráficos
+    renderizarPredOcupacao(dataOcup.predicoes);
+    renderizarPredAtendimentos(dataAtend.predicoes);
+    
+    // Tabela
+    atualizarTabelaPredicoes(dataOcup.predicoes, dataAtend.predicoes);
+    
+  } catch (erro) {
+    console.error('Erro:', erro);
+  }
+}
+
+function renderizarPredOcupacao(predicoes) {
+  const datas = predicoes.map(p => p.data);
+  const valores = predicoes.map(p => p.valor_predito);
+  
+  const options = {
+    chart: {
+      type: 'area',
+      height: 300,
+      toolbar: { show: false }
+    },
+    colors: ['#D4A625'],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 0.2,
+        opacityFrom: 0.6,
+        opacityTo: 0.1
+      }
+    },
+    xaxis: {
+      categories: datas,
+      labels: { style: { fontSize: '11px' } }
+    },
+    yaxis: {
+      title: { text: 'Taxa de Ocupação (%)' },
+      min: 0,
+      max: 100
+    },
+    grid: { borderColor: '#e8eaed', strokeDashArray: 3 },
+    dataLabels: { enabled: true, position: 'top' }
+  };
+  
+  const series = [{ name: 'Ocupação Prevista', data: valores }];
+  const chart = new ApexCharts(document.getElementById('chart-pred-ocupacao'), { series, ...options });
+  chart.render();
+}
+
+function renderizarPredAtendimentos(predicoes) {
+  const datas = predicoes.map(p => p.data);
+  const valores = predicoes.map(p => p.valor_predito);
+  
+  const options = {
+    chart: {
+      type: 'bar',
+      height: 300,
+      toolbar: { show: false }
+    },
+    colors: ['#003F88'],
+    xaxis: {
+      categories: datas,
+      labels: { style: { fontSize: '11px' } }
+    },
+    yaxis: {
+      title: { text: 'Atendimentos' }
+    },
+    grid: { borderColor: '#e8eaed', strokeDashArray: 3 },
+    dataLabels: { enabled: true, position: 'top' }
+  };
+  
+  const series = [{ name: 'Atendimentos Previstos', data: valores }];
+  const chart = new ApexCharts(document.getElementById('chart-pred-atendimentos'), { series, ...options });
+  chart.render();
+}
+
+function atualizarTabelaPredicoes(predOcup, predAtend) {
+  const tbody = document.getElementById('tabela-predicoes');
+  tbody.innerHTML = '';
+  
+  predOcup.forEach((po, idx) => {
+    const pa = predAtend[idx];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${po.data}</td>
+      <td class="font-mono">${po.valor_predito.toFixed(1)}%</td>
+      <td class="font-mono">±${(po.valor_predito * 0.15).toFixed(1)}%</td>
+      <td class="font-mono">${Math.round(pa.valor_predito)}</td>
+      <td>
+        <span class="badge badge-${
+          po.valor_predito >= 90 ? 'vermelho' :
+          po.valor_predito >= 70 ? 'amarelo' :
+          'verde'
+        }">
+          ${po.valor_predito >= 90 ? 'CRÍTICA' : po.valor_predito >= 70 ? 'ALTA' : 'NORMAL'}
+        </span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+atualizarPredicoes();
+setInterval(atualizarPredicoes, 6 * 60 * 60 * 1000); // A cada 6 horas
+</script>
+{% endblock %}

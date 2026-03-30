@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Transferência #{{ t.id }}{% endblock %}
+{% block page_title %}Transferência #{{ t.id }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('transferencia.index') }}" class="btn btn-secondary">Voltar</a>
+{% endblock %}
+{% block content %}
+{% set slbl, scor = t.status_label %}
+{% set plbl, pcor = t.prioridade_label %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="fw-600">{{ t.paciente.nome_exibicao }}</div>
+      <div style="font-size:.8rem;color:var(--cinza-400)">{{ t.paciente.idade }} anos</div>
+    </div>
+    <span class="badge badge-{{ pcor }} ms-auto">{{ plbl }}</span>
+    <span class="badge badge-{{ scor }}">{{ slbl }}</span>
+  </div>
+  <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    {% macro info(lbl, val) %}<div>
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza-400)">{{ lbl }}</div>
+      <div class="fw-500">{{ val or '—' }}</div>
+    </div>{% endmacro %}
+    {{ info('Origem', t.unidade_origem.nome) }}
+    {{ info('Destino', t.unidade_destino.nome) }}
+    {{ info('Solicitado em', t.data_solicitacao.strftime('%d/%m/%Y %H:%M')) }}
+    {{ info('Data prevista', t.data_prevista.strftime('%d/%m/%Y %H:%M') if t.data_prevista else '—') }}
+    {{ info('Transporte', t.condicao_transporte or '—') }}
+    {{ info('CID', t.cid) }}
+    <div style="grid-column:1/-1">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza-400);margin-bottom:4px">Motivo</div>
+      <div style="font-size:.9rem;line-height:1.7">{{ t.motivo }}</div>
+    </div>
+    {% if t.resumo_clinico %}
+    <div style="grid-column:1/-1">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza-400);margin-bottom:4px">Resumo clínico</div>
+      <div style="font-size:.88rem;line-height:1.7;white-space:pre-wrap">{{ t.resumo_clinico }}</div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-footer" style="display:flex;gap:10px;justify-content:flex-end">
+    {% if t.status == 'aceita' and t.unidade_origem_id == current_user.unidade_id %}
+    <form method="POST" action="{{ url_for('transferencia.iniciar', id=t.id) }}">
+      <button type="submit" class="btn btn-primary">Paciente saiu — Em trânsito</button>
+    </form>
+    {% endif %}
+    {% if t.status == 'em_transito' and t.unidade_destino_id == current_user.unidade_id %}
+    <form method="POST" action="{{ url_for('transferencia.concluir', id=t.id) }}">
+      <button type="submit" class="btn btn-success">Paciente chegou — Concluir</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

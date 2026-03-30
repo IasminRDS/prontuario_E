@@ -4,7 +4,7 @@
 
 {% block topbar_actions %}
   <a href="{{ url_for('relatorios.index') }}" class="btn btn-secondary">Voltar</a>
-  <a href="{{ request.url }}&exportar=csv" class="btn btn-secondary">
+  <a href="{{ url_for('relatorios.pacientes', sexo=filtros.sexo, municipio=filtros.municipio, idade_min=filtros.idade_min, idade_max=filtros.idade_max, tem_cns=filtros.tem_cns, exportar='csv') }}" class="btn btn-secondary">
     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Unidade' if unidade else 'Nova Unidade' }}{% endblock %}
+{% block page_title %}{{ 'Editar: '+unidade.nome if unidade else 'Cadastrar Nova Unidade' }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('gestao_unidades.index') }}" class="btn btn-secondary">Voltar</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:640px">
+<form method="POST">
+  <div class="card mb-16">
+    <div class="card-header"><h3>Dados da Unidade</h3></div>
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Nome <span class="obrigatorio">*</span></label>
+          <input type="text" name="nome" class="form-control" required
+                 value="{{ unidade.nome if unidade else '' }}"
+                 placeholder="Ex: UBS Central, Hospital Regional...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-control">
+            {% for t in ['UBS','UPA','Hospital','CAPS','NASF','Centro de Especialidades','Outro'] %}
+            <option value="{{ t }}" {% if unidade and unidade.tipo==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">CNES</label>
+          <input type="text" name="cnes" class="form-control font-mono"
+                 value="{{ unidade.cnes or '' if unidade else '' }}"
+                 placeholder="7 dígitos" maxlength="7">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Endereço</label>
+          <input type="text" name="endereco" class="form-control"
+                 value="{{ unidade.endereco or '' if unidade else '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Município</label>
+          <input type="text" name="municipio" class="form-control"
+                 value="{{ unidade.municipio or '' if unidade else '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">UF</label>
+          <select name="uf" class="form-control">
+            {% for uf in ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] %}
+            <option value="{{ uf }}" {% if unidade and unidade.uf==uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="text" name="telefone" class="form-control"
+                 value="{{ unidade.telefone or '' if unidade else '' }}">
+        </div>
+        {% if unidade %}
+        <div class="form-group">
+          <label class="form-label flex-center gap-8" style="cursor:pointer">
+            <input type="checkbox" name="ativo" {% if unidade.ativo %}checked{% endif %} style="width:16px;height:16px">
+            Unidade ativa
+          </label>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if not unidade %}
+  <div class="card mb-16">
+    <div class="card-header"><h3>Administrador local (opcional)</h3></div>
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Nome do admin</label>
+          <input type="text" name="nome_admin" class="form-control" placeholder="Ex: João Silva">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" name="email_admin" class="form-control" placeholder="admin@unidade.gov.br">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha inicial</label>
+          <input type="text" name="senha_admin" class="form-control" value="admin123">
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:var(--cinza-400);margin-top:8px">
+        Se preencher o e-mail, um usuário administrador será criado automaticamente para esta unidade.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;justify-content:flex-end;gap:12px">
+    <a href="{{ url_for('gestao_unidades.index') }}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">{{ 'Salvar' if unidade else 'Cadastrar Unidade' }}</button>
+  </div>
+</form>
+</div>
+{% endblock %}

@@ -6,10 +6,18 @@ from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 
+
+def _destino_pos_login(user):
+    """Redireciona para o destino correto conforme o perfil."""
+    if user.is_gestor_estadual():
+        return url_for('dash_estadual.index')
+    return url_for('dashboard.index')
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.index'))
+        return redirect(_destino_pos_login(current_user))
 
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -21,11 +29,12 @@ def login():
             user.ultimo_acesso = datetime.utcnow()
             db.session.commit()
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard.index'))
+            return redirect(next_page or _destino_pos_login(user))
         else:
             flash('E-mail ou senha inválidos.', 'danger')
 
     return render_template('auth/login.html')
+
 
 @auth_bp.route('/logout')
 @login_required
