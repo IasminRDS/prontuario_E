@@ -2,206 +2,41 @@
 {% block title %}Busca por QR Code{% endblock %}
 {% block page_title %}Busca por QR Code / Código de Barras{% endblock %}
 
-{% block topbar_actions %}
-  <a href="{{ url_for('pacientes.index') }}" class="btn btn-secondary">Voltar</a>
-{% endblock %}
-
-{% block head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-{% endblock %}
-
 {% block content %}
-<div style="max-width:560px;margin:0 auto">
-
-  <!-- Scanner de câmera -->
-  <div class="card mb-20">
-    <div class="card-header">
-      <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-      </svg>
-      <h3>Câmera — QR Code / Código de Barras</h3>
-    </div>
-    <div class="card-body" style="padding:16px">
-      <div id="reader" style="width:100%;border-radius:var(--raio);overflow:hidden"></div>
-      <div id="status-scan" style="margin-top:12px;text-align:center;font-size:.85rem;color:var(--cinza-400)">
-        Aguardando leitura...
-      </div>
-      <div style="display:flex;gap:10px;margin-top:12px;justify-content:center">
-        <button id="btn-iniciar" onclick="iniciarScanner()" class="btn btn-primary">
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          Iniciar câmera
-        </button>
-        <button id="btn-parar" onclick="pararScanner()" class="btn btn-secondary" style="display:none">
-          Parar câmera
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Digitação manual -->
-  <div class="card mb-20">
-    <div class="card-header">
-      <svg width="17" height="17" fill="none" stroke="var(--sus-azul)" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-      </svg>
-      <h3>Digitar código manualmente</h3>
-    </div>
-    <div class="card-body">
-      <div style="display:flex;gap:10px">
-        <input type="text" id="codigo-manual" class="form-control font-mono"
-               placeholder="CNS (15 dígitos), CPF ou ID do paciente..."
-               autofocus autocomplete="off"
-               onkeydown="if(event.key==='Enter') buscarCodigo()">
-        <button onclick="buscarCodigo()" class="btn btn-primary" style="white-space:nowrap">
-          Buscar
-        </button>
-      </div>
-      <div id="resultado-manual" style="margin-top:12px"></div>
-    </div>
-  </div>
-
-  <!-- Resultado -->
-  <div id="resultado-scan" style="display:none">
-    <div class="card" style="border-left:4px solid var(--sus-verde)">
-      <div class="card-header">
-        <svg width="16" height="16" fill="none" stroke="var(--sus-verde)" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <h3 style="color:var(--sus-verde)">Paciente encontrado</h3>
-      </div>
-      <div class="card-body" id="dados-paciente" style="padding:16px 20px"></div>
-      <div class="card-footer" style="display:flex;gap:10px">
-        <a id="btn-perfil" href="#" class="btn btn-primary">Ver prontuário completo</a>
-        <button onclick="document.getElementById('resultado-scan').style.display='none'"
-                class="btn btn-secondary">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Instruções -->
-  <div class="card" style="background:var(--cinza-50);border:none">
-    <div class="card-body" style="font-size:.82rem;color:var(--cinza-500);line-height:1.8">
-      <strong>Como usar:</strong><br>
-      • Aponte a câmera para o QR Code impresso no cartão do paciente<br>
-      • Ou escaneie o código de barras do CNS / cartão SUS<br>
-      • Ou digite o número do CNS, CPF ou ID diretamente no campo acima<br>
-      • O sistema buscará o paciente automaticamente
-    </div>
-  </div>
-
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-let scanner = null;
-
-function iniciarScanner() {
-  document.getElementById('btn-iniciar').style.display = 'none';
-  document.getElementById('btn-parar').style.display = '';
-  document.getElementById('status-scan').innerHTML = '<span style="color:var(--sus-azul)">Câmera ativa — aponte para o código...</span>';
-
-  scanner = new Html5Qrcode('reader');
-  scanner.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 280, height: 180 } },
-    (decodedText) => {
-      document.getElementById('status-scan').innerHTML =
-        '<span style="color:var(--sus-verde)">✓ Código lido: ' + decodedText + '</span>';
-      pararScanner();
-      processarCodigo(decodedText);
-    },
-    (err) => {}
-  ).catch(err => {
-    document.getElementById('status-scan').innerHTML =
-      '<span style="color:var(--sus-vermelho)">Câmera não disponível: ' + err + '</span>';
-    document.getElementById('btn-iniciar').style.display = '';
-    document.getElementById('btn-parar').style.display = 'none';
-  });
-}
-
-function pararScanner() {
-  if (scanner) {
-    scanner.stop().catch(() => {});
-    scanner = null;
+<style>
+  .qr-page{
+    min-height: calc(100vh - 62px - 32px); /* topbar + paddings aproximados */
+    display:flex;
+    align-items:center;      /* centraliza vertical */
+    justify-content:center;  /* centraliza horizontal */
   }
-  document.getElementById('btn-iniciar').style.display = '';
-  document.getElementById('btn-parar').style.display = 'none';
-}
+  .qr-wrap{
+    width:100%;
+    max-width:560px;
+    display:grid;
+    gap:12px;
+  }
+</style>
 
-function buscarCodigo() {
-  const codigo = document.getElementById('codigo-manual').value.trim();
-  if (!codigo) return;
-  processarCodigo(codigo);
-}
+<div class="qr-page">
+  <div class="qr-wrap">
+    <div class="card">
+      <div class="card-body">
+        <h3 style="margin-top:0;">Câmera — QR Code / Código de Barras</h3>
+        <p class="text-muted">Aguardando leitura...</p>
+        <button class="btn btn-primary">Iniciar câmera</button>
+      </div>
+    </div>
 
-function processarCodigo(codigo) {
-  // Limpar código (remover formatação CPF/CNS)
-  const limpo = codigo.replace(/[\.\-\/\s]/g, '');
-
-  fetch('/pacientes/buscar-codigo?q=' + encodeURIComponent(limpo))
-    .then(r => r.json())
-    .then(data => {
-      if (data.encontrado) {
-        exibirPaciente(data.paciente);
-      } else {
-        document.getElementById('resultado-manual').innerHTML =
-          '<div style="padding:10px 14px;background:var(--sus-vermelho-claro);border-radius:var(--raio);' +
-          'font-size:.84rem;color:#7B1A13">Paciente não encontrado para o código: <strong>' + codigo + '</strong></div>';
-        document.getElementById('resultado-scan').style.display = 'none';
-      }
-    })
-    .catch(() => {
-      document.getElementById('resultado-manual').innerHTML =
-        '<div style="padding:10px 14px;background:var(--cinza-100);border-radius:var(--raio);font-size:.84rem;color:var(--cinza-500)">Erro ao buscar. Tente novamente.</div>';
-    });
-}
-
-function exibirPaciente(p) {
-  document.getElementById('resultado-manual').innerHTML = '';
-  document.getElementById('resultado-scan').style.display = 'block';
-  document.getElementById('btn-perfil').href = '/pacientes/' + p.id;
-  document.getElementById('dados-paciente').innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
-    info('Nome', p.nome) +
-    info('CNS', p.cns || '—') +
-    info('CPF', p.cpf || '—') +
-    info('Idade', p.idade + ' anos') +
-    info('Data de nasc.', p.nascimento) +
-    info('Sexo', p.sexo == 'M' ? 'Masculino' : p.sexo == 'F' ? 'Feminino' : '—') +
-    (p.alergias ? '<div style="grid-column:1/-1;padding:8px 12px;background:var(--sus-vermelho-claro);border-radius:var(--raio);font-size:.84rem;color:#7B1A13"><strong>⚠ Alergias:</strong> ' + p.alergias + '</div>' : '') +
-    '</div>';
-  document.getElementById('resultado-scan').scrollIntoView({ behavior: 'smooth' });
-}
-
-function info(lbl, val) {
-  return '<div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza-400);margin-bottom:2px">' + lbl + '</div>' +
-         '<div style="font-weight:500;font-size:.9rem">' + val + '</div></div>';
-}
-
-// Suporte a leitores USB de código de barras (entrada como teclado)
-let buffer = '';
-let bufTimer;
-document.addEventListener('keypress', function(e) {
-  const campo = document.activeElement;
-  // Ignorar se estiver em um campo de input
-  if (campo && (campo.tagName === 'INPUT' || campo.tagName === 'TEXTAREA')) return;
-  clearTimeout(bufTimer);
-  buffer += e.key;
-  bufTimer = setTimeout(() => {
-    if (buffer.length >= 8) {
-      document.getElementById('codigo-manual').value = buffer;
-      processarCodigo(buffer);
-    }
-    buffer = '';
-  }, 100);
-});
-</script>
+    <div class="card">
+      <div class="card-body">
+        <h3 style="margin-top:0;">Digitar código manualmente</h3>
+        <form style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input class="form-control" placeholder="CNS (15 dígitos), CPF ou ID" style="min-width:260px;">
+          <button class="btn btn-primary" type="submit">Buscar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

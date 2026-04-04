@@ -30,6 +30,7 @@ class Paciente(db.Model):
     complemento = db.Column(db.String(100), nullable=True)
     bairro = db.Column(db.String(100), nullable=True)
     municipio = db.Column(db.String(100), nullable=True)
+    municipio_ibge = db.Column(db.String(7), nullable=True, index=True)
     uf = db.Column(db.String(2), nullable=True)
 
     # Informações clínicas básicas

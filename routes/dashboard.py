@@ -1,89 +1,138 @@
-# -*- coding: utf-8 -*-
+from datetime import date, timedelta, datetime
+
 from flask import Blueprint, render_template
-from flask_login import login_required, current_user
-from models.paciente import Paciente
-from models.atendimento import Atendimento
-from models.prontuario import Prontuario
-from models.agendamento import Agendamento
-from models.triagem import Triagem
-from models.exame import ExameSolicitado
-from models.encaminhamento import Encaminhamento
+from flask_login import login_required
+from sqlalchemy import func
+
 from database.db import db
-from datetime import datetime, date, timedelta
+from models.paciente import Paciente
 
-dashboard_bp = Blueprint('dashboard', __name__)
+try:
+    from models.atendimento import Atendimento
+except Exception:
+    Atendimento = None
+
+try:
+    from models.triagem import Triagem
+except Exception:
+    Triagem = None
+
+try:
+    from models.agendamento import Agendamento
+except Exception:
+    Agendamento = None
 
 
-@dashboard_bp.route('/')
+dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/")
+
+
+def _count(model, coluna_data=None, hoje_only=False, inicio=None):
+    if model is None:
+        return 0
+    try:
+        q = model.query
+        if coluna_data is not None:
+            if hoje_only:
+                q = q.filter(func.date(coluna_data) == date.today())
+            elif inicio is not None:
+                q = q.filter(func.date(coluna_data) >= inicio)
+        return int(q.count())
+    except Exception:
+        return 0
+
+
+def _serie_atendimentos_7dias():
+    fim = date.today()
+    dias = [fim - timedelta(days=i) for i in range(6, -1, -1)]
+    labels = [d.strftime("%d/%m") for d in dias]
+    valores = [0] * 7
+
+    if Atendimento is None:
+        return labels, valores
+
+    col = getattr(Atendimento, "data_atendimento", None) or getattr(Atendimento, "criado_em", None)
+    if col is None:
+        return labels, valores
+
+    try:
+        rows = (
+            db.session.query(func.date(col).label("d"), func.count(Atendimento.id))
+            .filter(func.date(col) >= dias[0], func.date(col) <= fim)
+            .group_by(func.date(col))
+            .all()
+        )
+        mapa = {}
+        for d, c in rows:
+            if isinstance(d, str):
+                d = datetime.strptime(d, "%Y-%m-%d").date()
+            mapa[d] = int(c or 0)
+        valores = [mapa.get(d, 0) for d in dias]
+    except Exception:
+        pass
+
+    return labels, valores
+
+
+def _pacientes_por_sexo():
+    try:
+        rows = (
+            db.session.query(Paciente.sexo, func.count(Paciente.id))
+            .group_by(Paciente.sexo)
+            .all()
+        )
+        m = f = o = 0
+        for sexo, c in rows:
+            s = (sexo or "").upper()
+            if s == "M":
+                m += int(c or 0)
+            elif s == "F":
+                f += int(c or 0)
+            else:
+                o += int(c or 0)
+        return [m, f, o]
+    except Exception:
+        return [0, 0, 0]
+
+
+@dashboard_bp.get("/")
 @login_required
 def index():
-    hoje       = date.today()
-    inicio_mes = hoje.replace(day=1)
-    uid        = current_user.unidade_id
+    total_pacientes = _count(Paciente)
+    atendimentos_hoje = _count(
+        Atendimento,
+        getattr(Atendimento, "data_atendimento", None) or getattr(Atendimento, "criado_em", None),
+        hoje_only=True
+    )
+    atendimentos_mes = _count(
+        Atendimento,
+        getattr(Atendimento, "data_atendimento", None) or getattr(Atendimento, "criado_em", None),
+        inicio=date.today().replace(day=1)
+    )
+    agenda_hoje = _count(
+        Agendamento,
+        getattr(Agendamento, "data_agendamento", None) or getattr(Agendamento, "data", None) or getattr(Agendamento, "criado_em", None),
+        hoje_only=True
+    )
+    triagens_hoje = _count(
+        Triagem,
+        getattr(Triagem, "data_triagem", None) or getattr(Triagem, "criado_em", None),
+        hoje_only=True
+    )
 
-    total_pacientes          = Paciente.query.filter_by(ativo=True).count()
-    atendimentos_hoje        = Atendimento.query.filter(db.func.date(Atendimento.data_hora) == hoje).count()
-    atendimentos_mes         = Atendimento.query.filter(Atendimento.data_hora >= inicio_mes).count()
-    prontuarios_hoje         = Prontuario.query.filter(db.func.date(Prontuario.criado_em) == hoje).count()
-    agendamentos_hoje        = Agendamento.query.filter(db.func.date(Agendamento.data_hora) == hoje, Agendamento.unidade_id == uid).count()
-    triagens_hoje            = Triagem.query.filter(db.func.date(Triagem.criado_em) == hoje, Triagem.unidade_id == uid).count()
-    exames_pendentes         = ExameSolicitado.query.filter(ExameSolicitado.status.in_(['solicitado','coletado','em_analise']), ExameSolicitado.unidade_id == uid).count()
-    encaminhamentos_abertos  = Encaminhamento.query.filter(Encaminhamento.status.in_(['solicitado','agendado']), Encaminhamento.unidade_origem_id == uid).count()
+    labels_7dias, dados_7dias = _serie_atendimentos_7dias()
+    pacientes_sexo = _pacientes_por_sexo()
 
-    ultimos_atendimentos = Atendimento.query.order_by(Atendimento.data_hora.desc()).limit(8).all()
-
-    # Últimos 7 dias
-    labels_7d, atend_7d = [], []
-    for i in range(6, -1, -1):
-        d = hoje - timedelta(days=i)
-        labels_7d.append(d.strftime('%d/%m'))
-        atend_7d.append(Atendimento.query.filter(db.func.date(Atendimento.data_hora) == d).count())
-
-    # Atendimentos por tipo no mês
-    tipos_raw    = db.session.query(Atendimento.tipo, db.func.count(Atendimento.id)).filter(Atendimento.data_hora >= inicio_mes).group_by(Atendimento.tipo).all()
-    tipos_labels = [t[0].capitalize() for t in tipos_raw] or ['Sem dados']
-    tipos_dados  = [t[1] for t in tipos_raw] or [0]
-
-    # Triagens por cor no mês
-    cores_triagem = ['vermelho','laranja','amarelo','verde','azul']
-    triagem_dados = [Triagem.query.filter(Triagem.classificacao == c, Triagem.criado_em >= inicio_mes, Triagem.unidade_id == uid).count() for c in cores_triagem]
-
-    # Sexo
-    masc  = Paciente.query.filter_by(ativo=True, sexo='M').count()
-    fem   = Paciente.query.filter_by(ativo=True, sexo='F').count()
-    outro = total_pacientes - masc - fem
-
-    # Faixas etárias
-    from dateutil.relativedelta import relativedelta
-    faixas = [('0-12',0,12),('13-17',13,17),('18-39',18,39),('40-59',40,59),('60+',60,200)]
-    faixas_dados = []
-    for _, imin, imax in faixas:
-        d_max = date.today() - relativedelta(years=imin)
-        d_min = date.today() - relativedelta(years=imax+1)
-        faixas_dados.append(Paciente.query.filter(Paciente.ativo==True, Paciente.data_nascimento<=d_max, Paciente.data_nascimento>d_min).count())
-
-    # Agendamentos por status hoje
-    ag_status = {s: Agendamento.query.filter(db.func.date(Agendamento.data_hora)==hoje, Agendamento.status==s, Agendamento.unidade_id==uid).count()
-                 for s in ['agendado','confirmado','em_atendimento','finalizado','cancelado','falta']}
-
-    return render_template('dashboard.html',
-        hoje=hoje,
+    return render_template(
+        "dashboard/index.html",
+        data_hoje=date.today().strftime("%d/%m/%Y"),
         total_pacientes=total_pacientes,
         atendimentos_hoje=atendimentos_hoje,
         atendimentos_mes=atendimentos_mes,
-        prontuarios_hoje=prontuarios_hoje,
-        agendamentos_hoje=agendamentos_hoje,
+        agenda_hoje=agenda_hoje,
         triagens_hoje=triagens_hoje,
-        exames_pendentes=exames_pendentes,
-        encaminhamentos_abertos=encaminhamentos_abertos,
-        ultimos_atendimentos=ultimos_atendimentos,
-        labels_7d=labels_7d,
-        atend_7d=atend_7d,
-        tipos_labels=tipos_labels,
-        tipos_dados=tipos_dados,
-        triagem_dados=triagem_dados,
-        sexo_dados=[masc, fem, outro],
-        faixas_labels=[f[0] for f in faixas],
-        faixas_dados=faixas_dados,
-        ag_status=ag_status,
+        pendentes_total=0,
+        pendencias_texto="0 exames · 0 enc.",
+        labels_7dias=labels_7dias,
+        dados_7dias=dados_7dias,
+        pacientes_sexo=pacientes_sexo,
     )

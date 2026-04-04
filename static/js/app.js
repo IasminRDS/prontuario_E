@@ -141,3 +141,67 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+(function () {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+
+  // cria botão hambúrguer se não existir
+  let btn = document.getElementById("btn-menu-mobile");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "btn-menu-mobile";
+    btn.className = "btn-menu-mobile";
+    btn.setAttribute("aria-label", "Abrir menu");
+    btn.innerHTML = "☰";
+    document.body.appendChild(btn);
+  }
+
+  // cria backdrop
+  let backdrop = document.getElementById("sidebar-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = "sidebar-backdrop";
+    backdrop.className = "sidebar-backdrop";
+    document.body.appendChild(backdrop);
+  }
+
+  function isMobile() {
+    return window.matchMedia("(max-width: 900px)").matches;
+  }
+
+  function openMenu() {
+    sidebar.classList.add("open");
+    backdrop.classList.add("show");
+    document.body.classList.add("menu-open");
+  }
+
+  function closeMenu() {
+    sidebar.classList.remove("open");
+    backdrop.classList.remove("show");
+    document.body.classList.remove("menu-open");
+  }
+
+  btn.addEventListener("click", () => {
+    if (sidebar.classList.contains("open")) closeMenu();
+    else openMenu();
+  });
+
+  backdrop.addEventListener("click", closeMenu);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+
+  // ao clicar em item no mobile, fecha menu
+  sidebar.querySelectorAll("a.nav-item").forEach((a) => {
+    a.addEventListener("click", () => {
+      if (isMobile()) closeMenu();
+    });
+  });
+
+  // reset ao redimensionar
+  window.addEventListener("resize", () => {
+    if (!isMobile()) closeMenu();
+  });
+})();

@@ -1,37 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Relatórios{% endblock %}
-{% block page_title %}Relatórios{% endblock %}
-
+{% block title %}Backup{% endblock %}
+{% block page_title %}Backup{% endblock %}
 {% block content %}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
-
-  {% for titulo, desc, url, cor in [
-    ('Pacientes','Listagem com filtros por sexo, idade, município e CNS',
-     url_for('relatorios.pacientes'),'azul'),
-    ('Atendimentos','Por período, tipo e status. Exportável em CSV',
-     url_for('relatorios.atendimentos'),'verde'),
-    ('Produção da Unidade','Indicadores consolidados do período',
-     url_for('relatorios.producao'),'amarelo'),
-    ('Triagem','Por período e classificação de risco',
-     url_for('relatorios.triagem'),'vermelho'),
-  ] %}
-  <a href="{{ url }}" style="text-decoration:none">
-    <div class="card" style="border-left:4px solid var(--sus-{{ cor }});
-                              transition:box-shadow .15s,transform .15s;cursor:pointer"
-         onmouseover="this.style.boxShadow='var(--sombra-md)';this.style.transform='translateY(-2px)'"
-         onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <div class="card-body" style="padding:20px 24px">
-        <div style="font-weight:600;font-size:1rem;margin-bottom:6px;color:var(--cinza-900)">
-          {{ titulo }}
-        </div>
-        <div style="font-size:.84rem;color:var(--cinza-500);line-height:1.5">{{ desc }}</div>
-        <div style="margin-top:14px">
-          <span class="badge badge-{{ cor }}">Acessar →</span>
-        </div>
-      </div>
-    </div>
-  </a>
-  {% endfor %}
-
+<div class="card" style="max-width:900px;margin:0 auto;">
+  <div class="card-body">
+    <p class="text-muted">Gerar cópia de segurança do banco atual.</p>
+    <form method="post" action="{{ url_for('backup.gerar') }}">
+      <button class="btn btn-primary">Gerar backup agora</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

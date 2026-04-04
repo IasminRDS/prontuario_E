@@ -31,6 +31,7 @@ def init_db(app):
         from models.estoque import ItemEstoque, MovEstoque
         from models.faturamento import AIH, APAC
         from models.pronto_socorro import AtendimentoPS
+        from models.regional import Regional
         db.create_all()
         _seed_data()
 
@@ -38,34 +39,35 @@ def _seed_data():
     from models.user import User
     from models.unidade import Unidade
     from models.medico import Medico
+    from models.regional import Regional  # <-- FALTAVA ESTE
 
     if User.query.first():
         return
 
-    # Unidade padrão
+    regional = Regional.query.filter_by(nome='Macrorregião Oeste').first()
+    if not regional:
+        regional = Regional(
+            nome='Macrorregião Oeste',
+            codigo='MO-01',
+            uf='BA',
+            ativo=True
+        )
+        db.session.add(regional)
+        db.session.flush()
+
     unidade = Unidade(
         nome='UBS Central',
         cnes='1234567',
         endereco='Rua da Saúde, 100',
         municipio='Bom Jesus da Lapa',
+        municipio_ibge='2903907',
         uf='BA',
         telefone='(77) 3481-0000',
-        tipo='UBS'
+        tipo='UBS',
+        regional_id=regional.id
     )
-    from database.db import db
     db.session.add(unidade)
     db.session.flush()
-
-    # Admin padrão
-    admin = User(
-        nome='Administrador',
-        email='admin@sus.gov.br',
-        perfil='admin',
-        unidade_id=unidade.id,
-        ativo=True
-    )
-    admin.set_password('admin123')
-    db.session.add(admin)
 
     # Médico padrão
     medico_user = User(
@@ -73,6 +75,10 @@ def _seed_data():
         email='medico@sus.gov.br',
         perfil='medico',
         unidade_id=unidade.id,
+        nivel_acesso='UNIDADE',
+        regional_id=regional.id,
+        municipio_ibge='2903907',
+        uf='BA',
         ativo=True
     )
     medico_user.set_password('medico123')

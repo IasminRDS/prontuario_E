@@ -1,99 +1,114 @@
-from flask import Flask, render_template
-from database.db import db, login_manager, init_db
 import os
+from flask import Flask
+from flask_login import LoginManager
+from dotenv import load_dotenv
+
+from database.db import db
+import models
+from models.user import User
+
+# principais
+from routes.auth import auth_bp
+from routes.pacientes import pacientes_bp
+from routes.relatorios import relatorios_bp
+from routes.triagem import triagem_bp
+from routes.atendimento import atendimento_bp
+from routes.vacinas import vacinas_bp
+from routes.admin import admin_bp
+from routes.prontuario import prontuario_bp
+from routes.estoque import estoque_bp
+
+# bloco 1
+from routes.dashboard import dashboard_bp
+from routes.alertas import alertas_bp
+from routes.agenda import agenda_bp
+from routes.leitos import leitos_bp
+
+# bloco 2
+from routes.pronto_socorro import pronto_socorro_bp
+from routes.exames import exames_bp
+from routes.catalogo_exames import catalogo_exames_bp
+from routes.catalogo_vacinas import catalogo_vacinas_bp
+try:
+    from routes.importacao import importacao_bp
+except ModuleNotFoundError:
+    from routes.importar import importacao_bp
+
+# bloco 3
+from routes.backup import backup_bp
+from routes.auditoria import auditoria_bp
+
+# novo
+from routes.unidades import unidades_bp
+
+load_dotenv()
+
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="templates", static_folder="static")
 
-    # Detectar ambiente
-    is_production = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER') or os.environ.get('PRODUCTION')
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///prontuario.db")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["APP_ENV"] = os.environ.get("APP_ENV", "dev")
+    app.config["PACIENTES_PER_PAGE"] = int(os.environ.get("PACIENTES_PER_PAGE", 20))
 
-    # Configurações
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sus-prontuario-secret-2024-mude-em-producao')
+    db.init_app(app)
 
-    # Banco de dados — usa PostgreSQL em produção se disponível, SQLite em dev
-    database_url = os.environ.get('DATABASE_URL', 'sqlite:///prontuario.db')
-    # Railway fornece postgres://, SQLAlchemy precisa de postgresql://
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['WTF_CSRF_ENABLED'] = False
+    login_manager = LoginManager()
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Faça login para continuar."
+    login_manager.login_message_category = "warning"
+    login_manager.init_app(app)
 
-    # Login manager
     @login_manager.user_loader
     def load_user(user_id):
-        from models.user import User
-        return User.query.get(int(user_id))
+        try:
+            return User.query.get(int(user_id))
+        except Exception:
+            return None
 
-    # Inicializar banco
-    init_db(app)
+    @app.context_processor
+    def inject_available_endpoints():
+        return {"available_endpoints": set(app.view_functions.keys())}
 
-    # Registrar blueprints
-    from routes.auth import auth_bp
-    from routes.pacientes import pacientes_bp
-    from routes.prontuario import prontuario_bp
-    from routes.dashboard import dashboard_bp
-    from routes.pdf import pdf_bp
-    from routes.admin import admin_bp
-    from routes.agendamento import agendamento_bp
-    from routes.vacinas import vacinas_bp
-    from routes.triagem import triagem_bp
-    from routes.exames import exames_bp
-    from routes.encaminhamentos import encaminhamentos_bp
-    from routes.medicamentos import medicamentos_bp
-    from routes.relatorios import relatorios_bp
-    from routes.importar import importar_bp
-    from routes.backup import backup_bp
-    from routes.configuracoes import configuracoes_bp
-    from routes.internacao import internacao_bp
-    from routes.prescricao_hosp import pres_hosp_bp
-    from routes.cirurgia import cirurgia_bp
-    from routes.estoque import estoque_bp
-    from routes.faturamento import faturamento_bp
-    from routes.pronto_socorro import ps_bp
-    from routes.relatorios_hosp import rel_hosp_bp
-    from routes.notificacoes import notif_bp
-
+    # registro
     app.register_blueprint(auth_bp)
-    app.register_blueprint(pacientes_bp)
-    app.register_blueprint(prontuario_bp)
     app.register_blueprint(dashboard_bp)
-    app.register_blueprint(pdf_bp)
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(agendamento_bp)
-    app.register_blueprint(vacinas_bp)
-    app.register_blueprint(triagem_bp)
+
+    app.register_blueprint(alertas_bp)
+    app.register_blueprint(agenda_bp)
+    app.register_blueprint(leitos_bp)
+    app.register_blueprint(pronto_socorro_bp)
     app.register_blueprint(exames_bp)
-    app.register_blueprint(encaminhamentos_bp)
-    app.register_blueprint(medicamentos_bp)
-    app.register_blueprint(relatorios_bp)
-    app.register_blueprint(importar_bp)
+    app.register_blueprint(catalogo_exames_bp)
+    app.register_blueprint(catalogo_vacinas_bp)
+    app.register_blueprint(unidades_bp)
+
+    app.register_blueprint(importacao_bp)
     app.register_blueprint(backup_bp)
-    app.register_blueprint(configuracoes_bp)
-    app.register_blueprint(internacao_bp)
-    app.register_blueprint(pres_hosp_bp)
-    app.register_blueprint(cirurgia_bp)
+    app.register_blueprint(auditoria_bp)
+
+    app.register_blueprint(pacientes_bp)
+    app.register_blueprint(relatorios_bp)
+    app.register_blueprint(triagem_bp)
+    app.register_blueprint(atendimento_bp)
+    app.register_blueprint(vacinas_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(prontuario_bp)
     app.register_blueprint(estoque_bp)
-    app.register_blueprint(faturamento_bp)
-    app.register_blueprint(ps_bp)
-    app.register_blueprint(rel_hosp_bp)
-    app.register_blueprint(notif_bp)
 
-    # Error handlers
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template('errors/403.html'), 403
-
-    @app.errorhandler(404)
-    def not_found(e):
-        return render_template('errors/404.html'), 404
+    with app.app_context():
+        db.create_all()
 
     return app
 
-# Para Railway/Render — gunicorn importa 'app' direto
+
 app = create_app()
 
-if __name__ == '__main__':
-    debug = not (os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PRODUCTION'))
-    app.run(debug=debug, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=os.environ.get("FLASK_DEBUG", "1") == "1",
+    )

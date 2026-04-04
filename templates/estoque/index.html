@@ -1,71 +1,122 @@
 {% extends "base.html" %}
-{% block title %}Estoque{% endblock %}
-{% block page_title %}Controle de Estoque{% endblock %}
-{% block topbar_actions %}
-  <a href="{{ url_for('estoque.alertas') }}" class="btn btn-secondary">
-    Alertas {% if criticos_n %}<span class="badge badge-vermelho" style="margin-left:4px">{{ criticos_n }}</span>{% endif %}
-  </a>
-  <a href="{{ url_for('estoque.novo') }}" class="btn btn-primary">+ Novo Item</a>
-{% endblock %}
-{% block content %}
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-  <div class="stat-card azul"><div class="stat-label">Itens cadastrados</div><div class="stat-value">{{ total_itens }}</div></div>
-  <div class="stat-card" style="border-left:4px solid var(--sus-vermelho)"><div class="stat-label">Estoque crítico</div><div class="stat-value" style="color:var(--sus-vermelho)">{{ criticos_n }}</div></div>
-  <div class="stat-card" style="border-left:4px solid var(--cinza-400)"><div class="stat-label">Zerados</div><div class="stat-value" style="color:var(--cinza-600)">{{ zerados_n }}</div></div>
-</div>
 
-<form method="GET" class="card mb-20">
-  <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-    <div class="search-bar" style="flex:1">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-      </svg>
-      <input type="text" name="q" value="{{ q }}" placeholder="Buscar medicamento ou material...">
-    </div>
-    <div class="form-group" style="min-width:130px">
-      <select name="categoria" class="form-control">
-        <option value="">Todas categorias</option>
-        {% for val, lbl in [('medicamento','Medicamento'),('material','Material'),
-          ('opme','OPME'),('dietetico','Dietético')] %}
-        <option value="{{ val }}" {% if cat==val %}selected{% endif %}>{{ lbl }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.84rem;cursor:pointer;white-space:nowrap">
-      <input type="checkbox" name="criticos" value="1" {% if criticos %}checked{% endif %}>
-      Só críticos
-    </label>
-    <button type="submit" class="btn btn-primary">Filtrar</button>
-    <a href="{{ url_for('estoque.index') }}" class="btn btn-secondary">Limpar</a>
-  </div>
+{% block title %}Estoque{% endblock %}
+{% block page_title %}Estoque{% endblock %}
+
+{% block content %}
+<style>
+  .toolbar{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .toolbar input[type="text"], .toolbar select{
+    height:36px; padding:6px 10px;
+    border:1px solid #c8d7ec; border-radius:8px; background:#fff;
+    min-width:220px;
+  }
+  .toolbar label{ display:flex; align-items:center; gap:6px; color:#385174; font-size:14px; }
+  .btn{
+    border:0; border-radius:8px; padding:8px 12px; cursor:pointer;
+    background:#1f5ab0; color:#fff; font-weight:700; text-decoration:none;
+    font-size:13px;
+  }
+  .btn:hover{ background:#18498f; }
+  .btn-light{
+    background:#eef4ff; color:#18498f; border:1px solid #cddcf5;
+  }
+
+  .table-wrap{
+    background:#fff; border:1px solid #d8e3f2; border-radius:12px; overflow:auto;
+  }
+  table{ width:100%; border-collapse:collapse; }
+  th, td{
+    padding:10px 12px; border-bottom:1px solid #edf2fa; text-align:left; vertical-align:middle;
+  }
+  th{ font-size:13px; color:#4f678a; background:#f8fbff; }
+  td{ font-size:14px; color:#102a4a; }
+  .pill{
+    display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
+    background:#e9f2ff; color:#1c4d93;
+  }
+  .pill.ok{ background:#e9f8ef; color:#1f7a43; }
+  .pill.warn{ background:#fff7e6; color:#9a6500; }
+  .pill.danger{ background:#ffecee; color:#b4232f; }
+
+  .empty{
+    padding:26px; text-align:center; color:#617a9c; background:#fff;
+    border:1px solid #d8e3f2; border-radius:12px;
+  }
+</style>
+
+<form class="toolbar" method="get">
+  <input type="text" name="q" value="{{ request.args.get('q', '') }}" placeholder="Buscar medicamento ou material">
+
+  <select name="categoria">
+    <option value="">Todas categorias</option>
+    {% for c in categorias or [] %}
+      <option value="{{ c }}" {% if request.args.get('categoria') == c %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+
+  <label>
+    <input type="checkbox" name="criticos" value="1" {% if request.args.get('criticos') %}checked{% endif %}>
+    Só críticos
+  </label>
+
+  <button class="btn" type="submit">Filtrar</button>
+  <a class="btn btn-light" href="{{ url_for('estoque.index') }}">Limpar</a>
+
+  {% if 'estoque.novo' in available_endpoints %}
+    <a class="btn" href="{{ url_for('estoque.novo') }}" style="margin-left:auto;">+ Novo item</a>
+  {% endif %}
 </form>
 
-<div class="card">
-  <div class="table-wrapper">
-    <table class="tabela">
-      <thead><tr><th>Nome</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        {% for i in itens %}
-        {% set slabel, scor = i.status %}
-        <tr>
-          <td class="fw-500">{{ i.nome }}<div style="font-size:.72rem;color:var(--cinza-400)">{{ i.apresentacao or '' }}</div></td>
-          <td><span class="badge badge-cinza">{{ i.categoria|capitalize }}</span></td>
-          <td class="font-mono fw-600" style="color:{% if i.quantidade<=0 %}var(--sus-vermelho){% elif i.abaixo_minimo %}var(--sus-amarelo){% else %}var(--sus-verde){% endif %}">
-            {{ i.quantidade }} {{ i.unidade_medida }}
-          </td>
-          <td class="font-mono" style="font-size:.8rem;color:var(--cinza-400)">{{ i.estoque_minimo }} {{ i.unidade_medida }}</td>
-          <td class="font-mono" style="font-size:.8rem">{{ i.lote_atual or '—' }}</td>
-          <td class="font-mono" style="font-size:.8rem">{{ i.validade.strftime('%m/%Y') if i.validade else '—' }}</td>
-          <td><span class="badge badge-{{ scor }}">{{ slabel }}</span></td>
-          <td>
-            <a href="{{ url_for('estoque.movimentar', id=i.id) }}" class="btn btn-sm btn-primary">Movimentar</a>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--cinza-400)">Nenhum item encontrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+{% if itens and itens|length > 0 %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Categoria</th>
+        <th>Quantidade</th>
+        <th>Mínimo</th>
+        <th>Lote</th>
+        <th>Validade</th>
+        <th>Status</th>
+        <th style="width:140px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in itens %}
+      {% set qtd = i.quantidade if i.quantidade is not none else 0 %}
+      {% set minv = i.minimo if i.minimo is not none else 0 %}
+      <tr>
+        <td><strong>{{ i.nome }}</strong></td>
+        <td>{{ i.categoria or '-' }}</td>
+        <td>{{ qtd }}</td>
+        <td>{{ minv }}</td>
+        <td>{{ i.lote or '-' }}</td>
+        <td>{{ i.validade or '-' }}</td>
+        <td>
+          {% if qtd <= 0 %}
+            <span class="pill danger">Sem estoque</span>
+          {% elif qtd <= minv %}
+            <span class="pill warn">Crítico</span>
+          {% else %}
+            <span class="pill ok">OK</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if 'estoque.editar' in available_endpoints %}
+            <a class="btn btn-light" href="{{ url_for('estoque.editar', item_id=i.id) }}">Editar</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+{% else %}
+  <div class="empty">Nenhum item encontrado.</div>
+{% endif %}
 {% endblock %}

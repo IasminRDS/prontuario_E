@@ -3,6 +3,7 @@ from database.db import db
 from datetime import datetime
 
 
+
 class ItemEstoque(db.Model):
     __tablename__ = 'itens_estoque'
     id              = db.Column(db.Integer, primary_key=True)
