@@ -189,8 +189,6 @@ def gerar_notificacoes(unidade_id):
 @notif_bp.route('/')
 @login_required
 def index():
-    if not current_user.unidade_id:
-        return redirect(url_for('dash_estadual.index'))
     alertas = gerar_notificacoes(current_user.unidade_id)
     return render_template('notificacoes/index.html', alertas=alertas)
 
@@ -199,8 +197,6 @@ def index():
 @login_required
 def api():
     """Retorna contagem de notificações para o badge na sidebar."""
-    if not current_user.unidade_id:
-        return jsonify({'total': 0, 'criticos': 0, 'alertas': []})
     alertas = gerar_notificacoes(current_user.unidade_id)
     criticos = sum(1 for a in alertas if a['tipo'] == 'critico')
     total    = len(alertas)

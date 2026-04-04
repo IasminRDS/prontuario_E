@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from models.paciente import Paciente
 from models.atendimento import Atendimento
@@ -17,11 +17,6 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/')
 @login_required
 def index():
-    # Só gestor_estadual SEM unidade vai para o painel estadual
-    # Admin com unidade continua no dashboard normal
-    if current_user.is_gestor_estadual():
-        return redirect(url_for('dash_estadual.index'))
-
     hoje       = date.today()
     inicio_mes = hoje.replace(day=1)
     uid        = current_user.unidade_id
