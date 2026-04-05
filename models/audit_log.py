@@ -1,19 +1,32 @@
-from database.db import db
 from datetime import datetime
+from database.db import db
+
 
 class AuditLog(db.Model):
-    __tablename__ = 'audit_logs'
+    __tablename__ = "audit_logs"
 
-    id          = db.Column(db.Integer, primary_key=True)
-    usuario_id  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    tabela      = db.Column(db.String(50),  nullable=False)
-    registro_id = db.Column(db.Integer,     nullable=True)
-    acao        = db.Column(db.String(20),  nullable=False)  # create | update | delete | view
-    descricao   = db.Column(db.Text,        nullable=True)
-    ip          = db.Column(db.String(45),  nullable=True)
-    criado_em   = db.Column(db.DateTime,    default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    tabela = db.Column(
+        db.String(80), nullable=False, index=True
+    )  # ex: users, pacientes
+    registro_id = db.Column(
+        db.Integer, nullable=True, index=True
+    )  # id do registro alvo
+    acao = db.Column(
+        db.String(40), nullable=False, index=True
+    )  # create/update/delete/list_html
+    descricao = db.Column(db.Text, nullable=True)  # evitar "detalhe" por enquanto
+    usuario_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=True, index=True
+    )
+    ip = db.Column(db.String(64), nullable=True)
+    criado_em = db.Column(
+        db.DateTime, default=datetime.utcnow, nullable=False, index=True
+    )
 
-    usuario = db.relationship('User', backref='audit_logs')
+    usuario = db.relationship("User", backref="logs_auditoria")
 
-    def __repr__(self):
-        return f'<AuditLog {self.acao} {self.tabela}:{self.registro_id}>'
+    @property
+    def detalhe(self):
+        # compatibilidade para templates/código antigo que usam log.detalhe
+        return self.descricao

@@ -1,20 +1,26 @@
 from database.db import db
 from datetime import datetime
 
+
 class Prontuario(db.Model):
-    __tablename__ = 'prontuarios'
+    __tablename__ = "prontuarios"
 
     id = db.Column(db.Integer, primary_key=True)
-    paciente_id = db.Column(db.Integer, db.ForeignKey('pacientes.id'), nullable=False)
-    atendimento_id = db.Column(db.Integer, db.ForeignKey('atendimentos.id'), nullable=True)
-    medico_id = db.Column(db.Integer, db.ForeignKey('medicos.id'), nullable=True)
-    unidade_id = db.Column(db.Integer, db.ForeignKey('unidades.id'), nullable=False)
+    paciente_id = db.Column(db.Integer, db.ForeignKey("pacientes.id"), nullable=False)
+    atendimento_id = db.Column(
+        db.Integer, db.ForeignKey("atendimentos.id"), nullable=True
+    )
+    medico_id = db.Column(db.Integer, db.ForeignKey("medicos.id"), nullable=True)
+    unidade_id = db.Column(
+        db.Integer, db.ForeignKey("unidades_saude.id"), nullable=False
+    )
 
     # SOAP (padrão de prontuário clínico)
-    subjetivo = db.Column(db.Text, nullable=True)      # S - Queixa / anamnese
-    objetivo = db.Column(db.Text, nullable=True)       # O - Exame físico / dados objetivos
-    avaliacao = db.Column(db.Text, nullable=True)      # A - Diagnóstico / hipóteses
-    plano = db.Column(db.Text, nullable=True)          # P - Conduta / prescrição
+    subjetivo = db.Column(db.Text, nullable=True)  # S - Queixa / anamnese
+
+    objetivo = db.Column(db.Text, nullable=True)  # O - Exame físico / dados objetivos
+    avaliacao = db.Column(db.Text, nullable=True)  # A - Diagnóstico / hipóteses
+    plano = db.Column(db.Text, nullable=True)  # P - Conduta / prescrição
 
     # Dados vitais
     pressao_arterial = db.Column(db.String(10), nullable=True)
@@ -39,15 +45,17 @@ class Prontuario(db.Model):
     assinado = db.Column(db.Boolean, default=False)
     assinado_em = db.Column(db.DateTime, nullable=True)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
-    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    atualizado_em = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
-    medico = db.relationship('Medico', backref='prontuarios')
-    unidade = db.relationship('Unidade', backref='prontuarios')
+    medico = db.relationship("Medico", backref="prontuarios")
+    unidade = db.relationship("UnidadeSaude", backref="prontuarios")
 
     @property
     def imc(self):
         if self.peso and self.altura and self.altura > 0:
-            return round(self.peso / (self.altura ** 2), 1)
+            return round(self.peso / (self.altura**2), 1)
         return None
 
     def assinar(self):
@@ -55,4 +63,4 @@ class Prontuario(db.Model):
         self.assinado_em = datetime.utcnow()
 
     def __repr__(self):
-        return f'<Prontuario {self.id} - Paciente {self.paciente_id}>'
+        return f"<Prontuario {self.id} - Paciente {self.paciente_id}>"

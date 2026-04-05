@@ -1,5 +1,6 @@
 from database.db import db
 
+
 class CatalogoVacina(db.Model):
     __tablename__ = "catalogo_vacinas"
 

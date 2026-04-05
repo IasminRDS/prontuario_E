@@ -14,11 +14,21 @@ def _seed_if_empty():
     seed = [
         ("UBS Central", "UBS", "0000001", "João Pessoa", "PB"),
         ("UBS Bairro Norte", "UBS", "0000002", "João Pessoa", "PB"),
-        ("Clínica Pública Municipal I", "Clínica Pública", "0000003", "Campina Grande", "PB"),
+        (
+            "Clínica Pública Municipal I",
+            "Clínica Pública",
+            "0000003",
+            "Campina Grande",
+            "PB",
+        ),
         ("Hospital Municipal São Lucas", "Hospital", "0000004", "João Pessoa", "PB"),
     ]
     for nome, tipo, cnes, cidade, uf in seed:
-        db.session.add(UnidadeSaude(nome=nome, tipo=tipo, cnes=cnes, cidade=cidade, uf=uf, ativo=True))
+        db.session.add(
+            UnidadeSaude(
+                nome=nome, tipo=tipo, cnes=cnes, cidade=cidade, uf=uf, ativo=True
+            )
+        )
     db.session.commit()
 
 
@@ -32,7 +42,13 @@ def index():
     query = UnidadeSaude.query
     if q:
         like = f"%{q}%"
-        query = query.filter(or_(UnidadeSaude.nome.ilike(like), UnidadeSaude.cidade.ilike(like), UnidadeSaude.cnes.ilike(like)))
+        query = query.filter(
+            or_(
+                UnidadeSaude.nome.ilike(like),
+                UnidadeSaude.cidade.ilike(like),
+                UnidadeSaude.cnes.ilike(like),
+            )
+        )
     if tipo:
         query = query.filter(UnidadeSaude.tipo == tipo)
 
@@ -57,9 +73,16 @@ def novo():
         flash("Já existe unidade com esse CNES.", "warning")
         return redirect(url_for("unidades.index"))
 
-    db.session.add(UnidadeSaude(
-        nome=nome, tipo=tipo, cnes=cnes or None, cidade=cidade or None, uf=uf or None, ativo=True
-    ))
+    db.session.add(
+        UnidadeSaude(
+            nome=nome,
+            tipo=tipo,
+            cnes=cnes or None,
+            cidade=cidade or None,
+            uf=uf or None,
+            ativo=True,
+        )
+    )
     db.session.commit()
     flash("Unidade cadastrada.", "success")
     return redirect(url_for("unidades.index"))

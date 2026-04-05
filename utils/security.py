@@ -11,18 +11,23 @@ _CNS_RE = re.compile(r"^\d{15}$")
 _IBGE_RE = re.compile(r"^\d{7}$")
 _CID10_RE = re.compile(r"^[A-TV-Z][0-9][0-9AB](\.[0-9A-KXZ]{1,2})?$")
 
+
 def validar_cpf(cpf: str) -> bool:
     cpf = (cpf or "").strip().replace(".", "").replace("-", "")
     return bool(_CPF_RE.fullmatch(cpf))
 
+
 def validar_cns(cns: str) -> bool:
     return bool(_CNS_RE.fullmatch((cns or "").strip()))
+
 
 def validar_ibge(cod: str) -> bool:
     return bool(_IBGE_RE.fullmatch((cod or "").strip()))
 
+
 def validar_cid10(cid: str) -> bool:
     return bool(_CID10_RE.fullmatch((cid or "").strip().upper()))
+
 
 # ===============================
 # Controle por perfil (já usado)
@@ -32,19 +37,24 @@ def perfil_requerido(*perfis):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                return redirect(url_for('auth.login'))
-            if current_user.perfil not in perfis and current_user.perfil != 'admin':
-                flash('Você não tem permissão para acessar esta área.', 'danger')
+                return redirect(url_for("auth.login"))
+            if current_user.perfil not in perfis and current_user.perfil != "admin":
+                flash("Você não tem permissão para acessar esta área.", "danger")
                 abort(403)
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator
 
+
 def medico_requerido(f):
-    return perfil_requerido('medico', 'admin')(f)
+    return perfil_requerido("medico", "admin")(f)
+
 
 def admin_requerido(f):
-    return perfil_requerido('admin')(f)
+    return perfil_requerido("admin")(f)
+
 
 # ===============================
 # Escopo territorial
@@ -90,6 +100,7 @@ def pode_acessar_paciente(paciente, usuario):
 
     return False
 
+
 def pode_acessar_prontuario(prontuario, usuario):
     if usuario.perfil == "admin":
         return True
@@ -105,6 +116,10 @@ def pode_acessar_prontuario(prontuario, usuario):
 
     if nivel == "REGIONAL":
         unidade = getattr(prontuario, "unidade", None)
-        return bool(unidade and getattr(usuario, "regional_id", None) and unidade.regional_id == usuario.regional_id)
+        return bool(
+            unidade
+            and getattr(usuario, "regional_id", None)
+            and unidade.regional_id == usuario.regional_id
+        )
 
     return False

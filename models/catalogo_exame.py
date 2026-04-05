@@ -1,5 +1,6 @@
 from database.db import db
 
+
 class CatalogoExame(db.Model):
     __tablename__ = "catalogo_exames"
 

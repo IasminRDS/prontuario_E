@@ -27,15 +27,17 @@ def novo():
         flash("Nome é obrigatório.", "warning")
         return redirect(url_for("pronto_socorro.index"))
 
-    FILA_PS.append({
-        "id": len(FILA_PS) + 1,
-        "nome": nome,
-        "motivo": motivo or "N/I",
-        "prioridade": prioridade,
-        "entrada": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "entrada_ts": datetime.now().timestamp(),
-        "status": "Aguardando",
-    })
+    FILA_PS.append(
+        {
+            "id": len(FILA_PS) + 1,
+            "nome": nome,
+            "motivo": motivo or "N/I",
+            "prioridade": prioridade,
+            "entrada": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "entrada_ts": datetime.now().timestamp(),
+            "status": "Aguardando",
+        }
+    )
     flash("Paciente adicionado ao Pronto-Socorro.", "success")
     return redirect(url_for("pronto_socorro.index"))
 

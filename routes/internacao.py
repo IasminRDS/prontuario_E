@@ -1,234 +1,270 @@
-# -*- coding: utf-8 -*-
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from models.internacao import Setor, Leito, Internacao, EvolucaoInternacao
-from models.paciente import Paciente
-from models.medico import Medico
+from sqlalchemy import func
+from sqlalchemy import text
 from database.db import db
-from utils.audit import registrar
-from datetime import datetime
+from models.unidade import Unidade
+from models.internacao import Setor, Leito
 
-internacao_bp = Blueprint('internacao', __name__, url_prefix='/internacao')
-
-
-# ── Painel de leitos ──
-@internacao_bp.route('/')
-@login_required
-def painel():
-    setores  = Setor.query.filter_by(ativo=True).order_by(Setor.nome).all()
-    total    = Leito.query.filter_by(ativo=True).count()
-    ocupados = Leito.query.filter_by(status='ocupado', ativo=True).count()
-    livres   = Leito.query.filter_by(status='livre', ativo=True).count()
-    higieniz = Leito.query.filter_by(status='em_higienizacao', ativo=True).count()
-
-    internacoes_ativas = Internacao.query.filter_by(
-        status='ativa').order_by(Internacao.data_entrada).all()
-
-    return render_template('internacao/painel.html',
-                           setores=setores,
-                           total=total, ocupados=ocupados,
-                           livres=livres, higieniz=higieniz,
-                           internacoes_ativas=internacoes_ativas)
+internacao_bp = Blueprint("internacao", __name__, url_prefix="/internacao")
 
 
-# ── Nova internação ──
-@internacao_bp.route('/nova', methods=['GET', 'POST'])
-@internacao_bp.route('/nova/<int:paciente_id>', methods=['GET', 'POST'])
-@login_required
-def nova(paciente_id=None):
-    pacientes = Paciente.query.filter_by(ativo=True).order_by(Paciente.nome).all()
-    medicos   = Medico.query.all()
-    leitos_livres = (Leito.query
-                     .filter_by(status='livre', ativo=True)
-                     .join(Setor)
-                     .filter_by(ativo=True)
-                     .order_by(Setor.nome, Leito.numero)
-                     .all())
-
-    if request.method == 'POST':
-        try:
-            leito_id = int(request.form['leito_id'])
-            leito    = Leito.query.get_or_404(leito_id)
-
-            data_prevista = None
-            dp = request.form.get('data_prevista_alta', '').strip()
-            if dp:
-                data_prevista = datetime.strptime(dp, '%Y-%m-%dT%H:%M')
-
-            intern = Internacao(
-                paciente_id        = int(request.form['paciente_id']),
-                leito_id           = leito_id,
-                medico_id          = request.form.get('medico_id') or None,
-                unidade_id         = current_user.unidade_id,
-                tipo               = request.form.get('tipo', 'clinica'),
-                motivo             = request.form.get('motivo', '').strip(),
-                hipotese_diag      = request.form.get('hipotese_diag', '').strip() or None,
-                cid_principal      = request.form.get('cid_principal', '').strip().upper() or None,
-                data_prevista_alta = data_prevista,
-                aih_numero         = request.form.get('aih_numero', '').strip() or None,
-                observacoes        = request.form.get('observacoes', '').strip() or None,
-                criado_por         = current_user.id,
-            )
-            db.session.add(intern)
-            db.session.flush()
-
-            # Atualizar status do leito
-            leito.status = 'ocupado'
-
-            registrar('internacoes', intern.id, 'create',
-                      f'Internação criada — leito {leito.numero}')
-            db.session.commit()
-            flash(f'Paciente internado no leito {leito.numero}!', 'success')
-            return redirect(url_for('internacao.visualizar', id=intern.id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro ao internar: {e}', 'danger')
-
-    paciente_sel = Paciente.query.get(paciente_id) if paciente_id else None
-    return render_template('internacao/form.html',
-                           pacientes=pacientes, medicos=medicos,
-                           leitos_livres=leitos_livres,
-                           paciente_sel=paciente_sel)
-
-
-# ── Visualizar internação ──
-@internacao_bp.route('/<int:id>')
-@login_required
-def visualizar(id):
-    intern   = Internacao.query.get_or_404(id)
-    evolucoes = intern.evolucoes.order_by(EvolucaoInternacao.criado_em.desc()).all()
-    prescricoes = intern.prescricoes_hosp
-    cirurgias   = intern.cirurgias
-    return render_template('internacao/visualizar.html',
-                           intern=intern, evolucoes=evolucoes,
-                           prescricoes=prescricoes, cirurgias=cirurgias)
-
-
-# ── Evolução diária ──
-@internacao_bp.route('/<int:id>/evolucao', methods=['GET', 'POST'])
-@login_required
-def nova_evolucao(id):
-    intern = Internacao.query.get_or_404(id)
-
-    if request.method == 'POST':
-        try:
-            ev = EvolucaoInternacao(
-                internacao_id        = id,
-                profissional_id      = current_user.id,
-                tipo                 = request.form.get('tipo', 'medica'),
-                pressao_arterial     = request.form.get('pressao_arterial', '').strip() or None,
-                temperatura          = float(request.form['temperatura']) if request.form.get('temperatura') else None,
-                frequencia_cardiaca  = int(request.form['frequencia_cardiaca']) if request.form.get('frequencia_cardiaca') else None,
-                frequencia_respiratoria = int(request.form['frequencia_respiratoria']) if request.form.get('frequencia_respiratoria') else None,
-                saturacao_o2         = float(request.form['saturacao_o2']) if request.form.get('saturacao_o2') else None,
-                diurese_ml           = int(request.form['diurese_ml']) if request.form.get('diurese_ml') else None,
-                balanco_hidrico      = int(request.form['balanco_hidrico']) if request.form.get('balanco_hidrico') else None,
-                subjetivo            = request.form.get('subjetivo', '').strip() or None,
-                objetivo             = request.form.get('objetivo', '').strip() or None,
-                avaliacao            = request.form.get('avaliacao', '').strip() or None,
-                plano                = request.form.get('plano', '').strip() or None,
-            )
-            db.session.add(ev)
-            registrar('internacoes', id, 'update', 'Evolução registrada')
-            db.session.commit()
-            flash('Evolução registrada!', 'success')
-            return redirect(url_for('internacao.visualizar', id=id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro: {e}', 'danger')
-
-    return render_template('internacao/evolucao_form.html', intern=intern)
-
-
-# ── Alta ──
-@internacao_bp.route('/<int:id>/alta', methods=['GET', 'POST'])
-@login_required
-def alta(id):
-    intern = Internacao.query.get_or_404(id)
-
-    if request.method == 'POST':
-        try:
-            intern.status       = 'alta'
-            intern.data_alta    = datetime.utcnow()
-            intern.tipo_alta    = request.form.get('tipo_alta', 'curado')
-            intern.sumario_alta = request.form.get('sumario_alta', '').strip() or None
-            intern.cid_alta     = request.form.get('cid_alta', '').strip().upper() or None
-            intern.leito.status = 'em_higienizacao'
-            registrar('internacoes', id, 'update',
-                      f'Alta {intern.tipo_alta} — {intern.dias_internado} dias')
-            db.session.commit()
-            flash('Alta registrada com sucesso!', 'success')
-            return redirect(url_for('internacao.painel'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro: {e}', 'danger')
-
-    return render_template('internacao/alta_form.html', intern=intern)
-
-
-# ── Gestão de leitos e setores ──
-@internacao_bp.route('/leitos')
+@internacao_bp.route("/leitos", methods=["GET"])
 @login_required
 def leitos():
-    setores = Setor.query.filter_by(ativo=True).order_by(Setor.nome).all()
-    return render_template('internacao/leitos.html', setores=setores)
+    try:
+        unidades = Unidade.query.order_by(Unidade.nome.asc()).all()
+    except Exception:
+        unidades = []
+
+    try:
+        setores = Setor.query.order_by(Setor.nome.asc()).all()
+    except Exception:
+        setores = []
+
+    return render_template("internacao/leitos.html", setores=setores, unidades=unidades)
 
 
-@internacao_bp.route('/leitos/<int:id>/status', methods=['POST'])
+@internacao_bp.route("/api/leitos", methods=["GET"])
 @login_required
-def atualizar_leito(id):
-    leito = Leito.query.get_or_404(id)
-    novo  = request.form.get('status')
-    if novo in Leito.STATUS_LABELS and leito.status != 'ocupado':
-        leito.status = novo
-        registrar('leitos', id, 'update', f'Status leito → {novo}')
-        db.session.commit()
-    return redirect(url_for('internacao.leitos'))
+def api_listar_leitos():
+    try:
+        setor_id = request.args.get("setor_id", type=int)
 
+        # Descobre colunas reais da tabela leitos
+        cols_info = (
+            db.session.execute(text("PRAGMA table_info(leitos)")).mappings().all()
+        )
+        cols = {c["name"] for c in cols_info}
 
-@internacao_bp.route('/setores/novo', methods=['GET', 'POST'])
-@login_required
-def novo_setor():
-    if request.method == 'POST':
-        try:
-            s = Setor(
-                nome        = request.form.get('nome', '').strip(),
-                sigla       = request.form.get('sigla', '').strip().upper() or None,
-                tipo        = request.form.get('tipo', 'enfermaria'),
-                andar       = request.form.get('andar', '').strip() or None,
-                responsavel = request.form.get('responsavel', '').strip() or None,
+        tem_ativo = "ativo" in cols
+        tem_observacoes = "observacoes" in cols
+        tem_setor_id = "setor_id" in cols
+        tem_tipo = "tipo" in cols
+        tem_status = "status" in cols
+
+        select_cols = ["id", "numero"]
+        if tem_setor_id:
+            select_cols.append("setor_id")
+        if tem_tipo:
+            select_cols.append("tipo")
+        if tem_status:
+            select_cols.append("status")
+        if tem_observacoes:
+            select_cols.append("observacoes")
+        if tem_ativo:
+            select_cols.append("ativo")
+
+        sql = f"SELECT {', '.join(select_cols)} FROM leitos"
+        where = []
+        params = {}
+
+        if tem_ativo:
+            where.append("ativo = 1")
+
+        if setor_id and tem_setor_id:
+            where.append("setor_id = :setor_id")
+            params["setor_id"] = setor_id
+
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+
+        sql += " ORDER BY numero ASC"
+
+        rows = db.session.execute(text(sql), params).mappings().all()
+
+        data = []
+        for r in rows:
+            setor_nome = ""
+            sid = r.get("setor_id")
+            if sid:
+                s = db.session.get(Setor, sid)
+                if s:
+                    setor_nome = getattr(s, "nome", "") or ""
+
+            data.append(
+                {
+                    "id": r.get("id"),
+                    "numero": r.get("numero", ""),
+                    "tipo": r.get("tipo", ""),
+                    "status": r.get("status", ""),
+                    "setor_id": sid,
+                    "setor": setor_nome,
+                }
             )
-            db.session.add(s)
-            db.session.flush()
 
-            # Criar leitos automaticamente
-            qtd = int(request.form.get('qtd_leitos', 0))
-            prefixo = s.sigla or s.nome[:3].upper()
-            for i in range(1, qtd + 1):
-                l = Leito(setor_id=s.id,
-                          numero=f'{prefixo}-{i:02d}',
-                          tipo=request.form.get('tipo_leito', 'comum'))
-                db.session.add(l)
+        return jsonify(data), 200
 
-            db.session.commit()
-            flash(f'Setor {s.nome} criado com {qtd} leito(s)!', 'success')
-            return redirect(url_for('internacao.leitos'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro: {e}', 'danger')
-
-    return render_template('internacao/setor_form.html')
+    except Exception as e:
+        return jsonify({"ok": False, "erro": f"api_listar_leitos: {str(e)}"}), 500
 
 
-# ── API ──
-@internacao_bp.route('/api/leitos')
+@internacao_bp.route("/api/leitos", methods=["POST"])
 @login_required
-def api_leitos():
-    setores = Setor.query.filter_by(ativo=True).all()
-    return jsonify([{
-        'setor': s.nome,
-        'total': s.total_leitos,
-        'ocupados': s.leitos_ocupados,
-        'livres': s.leitos_livres,
-        'taxa': s.taxa_ocupacao,
-    } for s in setores])
+def api_criar_leito():
+    try:
+        data = request.get_json(silent=True) or request.form or {}
+
+        numero = (data.get("numero") or "").strip()
+        tipo = (data.get("tipo") or "comum").strip().lower()
+        status = (data.get("status") or "livre").strip().lower()
+        setor_id_raw = data.get("setor_id")
+
+        if not numero:
+            return jsonify({"ok": False, "erro": "Campo 'numero' é obrigatório."}), 400
+
+        try:
+            setor_id = (
+                int(setor_id_raw) if setor_id_raw not in (None, "", "null") else None
+            )
+        except Exception:
+            setor_id = None
+
+        if not setor_id:
+            return (
+                jsonify({"ok": False, "erro": "Campo 'setor_id' é obrigatório."}),
+                400,
+            )
+
+        setor = db.session.get(Setor, setor_id)
+        if not setor:
+            return jsonify({"ok": False, "erro": "Setor inválido."}), 400
+
+        tipos_permitidos = {"comum", "isolamento", "uti"}
+        if tipo not in tipos_permitidos:
+            tipo = "comum"
+
+        status_permitidos = {
+            "livre",
+            "ocupado",
+            "reservado",
+            "em_higienizacao",
+            "interditado",
+            "bloqueado",
+        }
+        if status not in status_permitidos:
+            status = "livre"
+
+        # Colunas reais da tabela
+        cols_info = (
+            db.session.execute(text("PRAGMA table_info(leitos)")).mappings().all()
+        )
+        cols = {c["name"] for c in cols_info}
+
+        tem_ativo = "ativo" in cols
+        tem_setor_id = "setor_id" in cols
+        tem_tipo = "tipo" in cols
+        tem_status = "status" in cols
+        tem_observacoes = "observacoes" in cols
+
+        # Duplicidade por setor + numero
+        q_sql = "SELECT id FROM leitos WHERE lower(numero)=lower(:numero)"
+        q_params = {"numero": numero}
+
+        if tem_setor_id:
+            q_sql += " AND setor_id=:setor_id"
+            q_params["setor_id"] = setor_id
+
+        if tem_ativo:
+            q_sql += " AND ativo=1"
+
+        existe = db.session.execute(text(q_sql), q_params).first()
+        if existe:
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "erro": "Já existe leito com esse número neste setor.",
+                    }
+                ),
+                400,
+            )
+
+        insert_cols = ["numero"]
+        insert_vals = [":numero"]
+        ins_params = {"numero": numero}
+
+        if tem_setor_id:
+            insert_cols.append("setor_id")
+            insert_vals.append(":setor_id")
+            ins_params["setor_id"] = setor_id
+
+        if tem_tipo:
+            insert_cols.append("tipo")
+            insert_vals.append(":tipo")
+            ins_params["tipo"] = tipo
+
+        if tem_status:
+            insert_cols.append("status")
+            insert_vals.append(":status")
+            ins_params["status"] = status
+
+        if tem_observacoes:
+            insert_cols.append("observacoes")
+            insert_vals.append(":observacoes")
+            ins_params["observacoes"] = ""
+
+        if tem_ativo:
+            insert_cols.append("ativo")
+            insert_vals.append(":ativo")
+            ins_params["ativo"] = 1
+
+        sql_insert = f"""
+            INSERT INTO leitos ({', '.join(insert_cols)})
+            VALUES ({', '.join(insert_vals)})
+        """
+
+        db.session.execute(text(sql_insert), ins_params)
+        db.session.commit()
+
+        novo_id = db.session.execute(text("SELECT last_insert_rowid()")).scalar()
+
+        return (
+            jsonify(
+                {"ok": True, "id": int(novo_id), "msg": "Leito criado com sucesso."}
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "erro": f"api_criar_leito: {str(e)}"}), 500
+
+
+@internacao_bp.route("/api/leitos/<int:leito_id>/status", methods=["POST"])
+@login_required
+def api_status_leito(leito_id):
+    try:
+        data = request.get_json(silent=True) or request.form or {}
+        status = (data.get("status") or "").strip().lower()
+
+        permitidos = {
+            "livre",
+            "ocupado",
+            "reservado",
+            "em_higienizacao",
+            "interditado",
+            "bloqueado",
+        }
+        if status not in permitidos:
+            return jsonify({"ok": False, "erro": "Status inválido."}), 400
+
+        try:
+            leito = db.session.get(Leito, leito_id)
+        except Exception:
+            leito = Leito.query.get(leito_id)
+
+        if not leito:
+            return jsonify({"ok": False, "erro": "Leito não encontrado."}), 404
+
+        if hasattr(leito, "ativo") and not leito.ativo:
+            return jsonify({"ok": False, "erro": "Leito inativo."}), 400
+
+        leito.status = status
+        db.session.commit()
+
+        return jsonify({"ok": True, "msg": "Status atualizado com sucesso."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "erro": f"api_status_leito: {str(e)}"}), 500

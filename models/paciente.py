@@ -1,19 +1,22 @@
 from database.db import db
 from datetime import datetime, date
 
+
 class Paciente(db.Model):
-    __tablename__ = 'pacientes'
+    __tablename__ = "pacientes"
 
     id = db.Column(db.Integer, primary_key=True)
 
     # Identificação
     nome = db.Column(db.String(150), nullable=False)
     nome_social = db.Column(db.String(150), nullable=True)
-    cns = db.Column(db.String(20), unique=True, nullable=True)   # Cartão Nacional de Saúde
+    cns = db.Column(
+        db.String(20), unique=True, nullable=True
+    )  # Cartão Nacional de Saúde
     cpf = db.Column(db.String(14), unique=True, nullable=True)
     rg = db.Column(db.String(20), nullable=True)
     data_nascimento = db.Column(db.Date, nullable=False)
-    sexo = db.Column(db.String(1), nullable=False)               # M / F / I
+    sexo = db.Column(db.String(1), nullable=False)  # M / F / I
     raca_cor = db.Column(db.String(20), nullable=True)
     nome_mae = db.Column(db.String(150), nullable=True)
     nome_pai = db.Column(db.String(150), nullable=True)
@@ -41,18 +44,24 @@ class Paciente(db.Model):
     # Controle
     ativo = db.Column(db.Boolean, default=True)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
-    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    criado_por = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    atualizado_em = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    criado_por = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     # Relacionamentos
-    atendimentos = db.relationship('Atendimento', backref='paciente', lazy='dynamic')
-    prontuarios = db.relationship('Prontuario', backref='paciente', lazy='dynamic')
+    atendimentos = db.relationship("Atendimento", backref="paciente", lazy="dynamic")
+    prontuarios = db.relationship("Prontuario", backref="paciente", lazy="dynamic")
 
     @property
     def idade(self):
         hoje = date.today()
         nascimento = self.data_nascimento
-        anos = hoje.year - nascimento.year - ((hoje.month, hoje.day) < (nascimento.month, nascimento.day))
+        anos = (
+            hoje.year
+            - nascimento.year
+            - ((hoje.month, hoje.day) < (nascimento.month, nascimento.day))
+        )
         return anos
 
     @property
@@ -60,4 +69,4 @@ class Paciente(db.Model):
         return self.nome_social if self.nome_social else self.nome
 
     def __repr__(self):
-        return f'<Paciente {self.nome}>'
+        return f"<Paciente {self.nome}>"

@@ -8,7 +8,7 @@ from models.medico import Medico
 from utils.security import validar_cid10, pode_acessar_prontuario, pode_acessar_paciente
 from utils.audit import registrar
 
-prontuario_bp = Blueprint('prontuario', __name__, url_prefix='/prontuarios')
+prontuario_bp = Blueprint("prontuario", __name__, url_prefix="/prontuarios")
 
 
 def _query_prontuario_escopo():
@@ -44,22 +44,30 @@ def listar_prontuarios():
 
     registrar("prontuarios", None, "list", f"paciente_id={paciente_id},cid={cid}")
 
-    return jsonify([{
-        "id": p.id,
-        "paciente_id": p.paciente_id,
-        "atendimento_id": p.atendimento_id,
-        "medico_id": p.medico_id,
-        "unidade_id": p.unidade_id,
-        "subjetivo": p.subjetivo,
-        "objetivo": p.objetivo,
-        "avaliacao": p.avaliacao,
-        "plano": p.plano,
-        "cid_principal": p.cid_principal,
-        "cid_secundario": p.cid_secundario,
-        "assinado": p.assinado,
-        "assinado_em": p.assinado_em.isoformat() if p.assinado_em else None,
-        "criado_em": p.criado_em.isoformat() if p.criado_em else None,
-    } for p in itens]), 200
+    return (
+        jsonify(
+            [
+                {
+                    "id": p.id,
+                    "paciente_id": p.paciente_id,
+                    "atendimento_id": p.atendimento_id,
+                    "medico_id": p.medico_id,
+                    "unidade_id": p.unidade_id,
+                    "subjetivo": p.subjetivo,
+                    "objetivo": p.objetivo,
+                    "avaliacao": p.avaliacao,
+                    "plano": p.plano,
+                    "cid_principal": p.cid_principal,
+                    "cid_secundario": p.cid_secundario,
+                    "assinado": p.assinado,
+                    "assinado_em": p.assinado_em.isoformat() if p.assinado_em else None,
+                    "criado_em": p.criado_em.isoformat() if p.criado_em else None,
+                }
+                for p in itens
+            ]
+        ),
+        200,
+    )
 
 
 @prontuario_bp.get("/<int:prontuario_id>")
@@ -72,34 +80,41 @@ def obter_prontuario(prontuario_id):
 
     registrar("prontuarios", p.id, "view", "Visualização de prontuário")
 
-    return jsonify({
-        "id": p.id,
-        "paciente_id": p.paciente_id,
-        "atendimento_id": p.atendimento_id,
-        "medico_id": p.medico_id,
-        "unidade_id": p.unidade_id,
-        "subjetivo": p.subjetivo,
-        "objetivo": p.objetivo,
-        "avaliacao": p.avaliacao,
-        "plano": p.plano,
-        "pressao_arterial": p.pressao_arterial,
-        "temperatura": p.temperatura,
-        "frequencia_cardiaca": p.frequencia_cardiaca,
-        "frequencia_respiratoria": p.frequencia_respiratoria,
-        "saturacao_o2": p.saturacao_o2,
-        "peso": p.peso,
-        "altura": p.altura,
-        "glicemia": p.glicemia,
-        "cid_principal": p.cid_principal,
-        "cid_secundario": p.cid_secundario,
-        "prescricao": p.prescricao,
-        "encaminhamento": p.encaminhamento,
-        "retorno_dias": p.retorno_dias,
-        "assinado": p.assinado,
-        "assinado_em": p.assinado_em.isoformat() if p.assinado_em else None,
-        "criado_em": p.criado_em.isoformat() if p.criado_em else None,
-        "atualizado_em": p.atualizado_em.isoformat() if p.atualizado_em else None,
-    }), 200
+    return (
+        jsonify(
+            {
+                "id": p.id,
+                "paciente_id": p.paciente_id,
+                "atendimento_id": p.atendimento_id,
+                "medico_id": p.medico_id,
+                "unidade_id": p.unidade_id,
+                "subjetivo": p.subjetivo,
+                "objetivo": p.objetivo,
+                "avaliacao": p.avaliacao,
+                "plano": p.plano,
+                "pressao_arterial": p.pressao_arterial,
+                "temperatura": p.temperatura,
+                "frequencia_cardiaca": p.frequencia_cardiaca,
+                "frequencia_respiratoria": p.frequencia_respiratoria,
+                "saturacao_o2": p.saturacao_o2,
+                "peso": p.peso,
+                "altura": p.altura,
+                "glicemia": p.glicemia,
+                "cid_principal": p.cid_principal,
+                "cid_secundario": p.cid_secundario,
+                "prescricao": p.prescricao,
+                "encaminhamento": p.encaminhamento,
+                "retorno_dias": p.retorno_dias,
+                "assinado": p.assinado,
+                "assinado_em": p.assinado_em.isoformat() if p.assinado_em else None,
+                "criado_em": p.criado_em.isoformat() if p.criado_em else None,
+                "atualizado_em": (
+                    p.atualizado_em.isoformat() if p.atualizado_em else None
+                ),
+            }
+        ),
+        200,
+    )
 
 
 @prontuario_bp.post("/")
@@ -116,7 +131,10 @@ def criar_prontuario():
         return jsonify({"erro": "Paciente não encontrado"}), 404
 
     if not pode_acessar_paciente(paciente, current_user):
-        return jsonify({"erro": "Sem permissão para criar prontuário para este paciente"}), 403
+        return (
+            jsonify({"erro": "Sem permissão para criar prontuário para este paciente"}),
+            403,
+        )
 
     cid_principal = (data.get("cid_principal") or "").strip().upper()
     cid_secundario = (data.get("cid_secundario") or "").strip().upper()
@@ -160,7 +178,12 @@ def criar_prontuario():
     db.session.add(novo)
     db.session.commit()
 
-    registrar("prontuarios", novo.id, "create", f"Prontuário criado para paciente {paciente_id}")
+    registrar(
+        "prontuarios",
+        novo.id,
+        "create",
+        f"Prontuário criado para paciente {paciente_id}",
+    )
 
     return jsonify({"mensagem": "Prontuário criado com sucesso", "id": novo.id}), 201
 
@@ -179,7 +202,9 @@ def atualizar_prontuario(prontuario_id):
     data = request.get_json(silent=True) or {}
 
     cid_principal = (data.get("cid_principal", p.cid_principal) or "").strip().upper()
-    cid_secundario = (data.get("cid_secundario", p.cid_secundario) or "").strip().upper()
+    cid_secundario = (
+        (data.get("cid_secundario", p.cid_secundario) or "").strip().upper()
+    )
 
     if cid_principal and not validar_cid10(cid_principal):
         return jsonify({"erro": "CID principal inválido"}), 400
@@ -193,7 +218,9 @@ def atualizar_prontuario(prontuario_id):
     p.pressao_arterial = data.get("pressao_arterial", p.pressao_arterial)
     p.temperatura = data.get("temperatura", p.temperatura)
     p.frequencia_cardiaca = data.get("frequencia_cardiaca", p.frequencia_cardiaca)
-    p.frequencia_respiratoria = data.get("frequencia_respiratoria", p.frequencia_respiratoria)
+    p.frequencia_respiratoria = data.get(
+        "frequencia_respiratoria", p.frequencia_respiratoria
+    )
     p.saturacao_o2 = data.get("saturacao_o2", p.saturacao_o2)
     p.peso = data.get("peso", p.peso)
     p.altura = data.get("altura", p.altura)
