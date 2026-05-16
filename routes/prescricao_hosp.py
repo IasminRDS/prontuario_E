@@ -128,4 +128,8 @@ def administrar(item_id):
               f'Medicamento {status} — {item.nome_exibicao}')
     db.session.commit()
     flash(f'{item.nome_exibicao} — {status}.', 'success')
+<<<<<<< HEAD
     return redirect(url_for('pres_hosp.visualizar', id=item.prescricao_id))
+=======
+    return redirect(url_for('pres_hosp.visualizar', id=item.prescricao_id))
+>>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0

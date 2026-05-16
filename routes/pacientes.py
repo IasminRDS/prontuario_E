@@ -154,7 +154,15 @@ def index():
         error_out=False
     )
 
+<<<<<<< HEAD
     # BLOCO PROBLEMÁTICO REMOVIDO: O modelo Paciente já resolve isso usando @property
+=======
+    for p in pacientes.items:
+        if not getattr(p, "nome_exibicao", None):
+            p.nome_exibicao = p.nome_social or p.nome
+        if getattr(p, "idade", None) is None:
+            p.idade = _idade_anos(p.data_nascimento)
+>>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
 
     registrar("pacientes", None, "list_html", f"q={filtros['q']}")
     return render_template("pacientes/listar.html", pacientes=pacientes, **filtros)
@@ -309,6 +317,7 @@ def criar_paciente():
     nome = (data.get("nome") or "").strip()
     cpf = (data.get("cpf") or "").strip().replace(".", "").replace("-", "")
     cns = (data.get("cns") or "").strip()
+<<<<<<< HEAD
     data_nascimento = data.get("data_nascimento")
     sexo = data.get("sexo")
 
@@ -320,6 +329,11 @@ def criar_paciente():
     if not sexo:
         return jsonify({"erro": "Sexo é obrigatório"}), 400
 
+=======
+
+    if not nome:
+        return jsonify({"erro": "Nome é obrigatório"}), 400
+>>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
     if cpf and not validar_cpf(cpf):
         return jsonify({"erro": "CPF inválido (11 dígitos)"}), 400
     if cns and not validar_cns(cns):
@@ -352,8 +366,13 @@ def criar_paciente():
         cns=cns or None,
         cpf=cpf or None,
         rg=data.get("rg"),
+<<<<<<< HEAD
         data_nascimento=data_nascimento,
         sexo=sexo,
+=======
+        data_nascimento=data.get("data_nascimento"),
+        sexo=data.get("sexo"),
+>>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
         raca_cor=data.get("raca_cor"),
         nome_mae=data.get("nome_mae"),
         nome_pai=data.get("nome_pai"),
