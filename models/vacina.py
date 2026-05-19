@@ -7,15 +7,12 @@ class Vacina(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(120), nullable=False)
-<<<<<<< HEAD
     
     # NOVAS COLUNAS ADICIONADAS PARA O SEED FUNCIONAR
     sigla = db.Column(db.String(50), nullable=True)
     doses_total = db.Column(db.Integer, default=1)
     intervalo_dias = db.Column(db.Integer, nullable=True)
     
-=======
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
     fabricante = db.Column(db.String(120))
     lote = db.Column(db.String(60))
     validade = db.Column(db.Date)
@@ -40,8 +37,4 @@ class VacinaAplicada(db.Model):
     data_aplicacao = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     unidade = db.Column(db.String(120), nullable=True)
     profissional = db.Column(db.String(120), nullable=True)
-<<<<<<< HEAD
     observacao = db.Column(db.Text, nullable=True)
-=======
-    observacao = db.Column(db.Text, nullable=True)
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0

@@ -1,15 +1,19 @@
-from flask import Blueprint, send_file, abort, request, render_template
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import Blueprint, send_file, abort, request, render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
+
 from models.prontuario import Prontuario
 from models.paciente import Paciente
 from models.medico import Medico
 from models.encaminhamento import Encaminhamento
 from services.pdf_service import gerar_prontuario, gerar_receituario, gerar_atestado
 from services.pdf_encaminhamento import gerar_encaminhamento
+from services.pdf_manager import PDFManager
 from utils.audit import registrar
 
 pdf_bp = Blueprint('pdf', __name__, url_prefix='/pdf')
-
 
 @pdf_bp.route('/prontuario/<int:id>')
 @login_required
@@ -23,7 +27,6 @@ def prontuario(id):
     nome = f'prontuario_{paciente.nome.split()[0].lower()}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
-
 
 @pdf_bp.route('/receituario/<int:id>')
 @login_required
@@ -39,7 +42,6 @@ def receituario(id):
     nome = f'receituario_{paciente.nome.split()[0].lower()}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
-
 
 @pdf_bp.route('/atestado/<int:paciente_id>', methods=['GET', 'POST'])
 @login_required
@@ -60,7 +62,6 @@ def atestado(paciente_id):
 
     return render_template('pdf/atestado_form.html', paciente=paciente)
 
-
 @pdf_bp.route('/encaminhamento/<int:id>')
 @login_required
 def encaminhamento(id):
@@ -73,3 +74,93 @@ def encaminhamento(id):
     nome = f'encaminhamento_{enc.especialidade.lower().replace(" ","_")}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
+
+
+# ==========================================
+# ROTAS DE FERRAMENTAS PDF AVANÇADAS
+# ==========================================
+
+@pdf_bp.route('/ferramentas')
+@login_required
+def ferramentas():
+    return render_template('pdf/ferramentas.html')
+
+@pdf_bp.route('/processar', methods=['POST'])
+@login_required
+def processar_pdf():
+    arquivo = request.files.get('documento')
+    acao = request.form.get('acao')
+    
+    if not arquivo or arquivo.filename == '':
+        flash("Nenhum arquivo enviado.", "danger")
+        return redirect(url_for('pdf.ferramentas'))
+
+    os.makedirs('instance', exist_ok=True)
+    
+    nome_seguro = secure_filename(arquivo.filename)
+    nome_temporario = f"temp_{uuid.uuid4().hex}_{nome_seguro}"
+    caminho_temp = os.path.join('instance', nome_temporario)
+    caminho_saida = os.path.join('instance', f"proc_{nome_temporario}")
+    
+    arquivo.save(caminho_temp)
+
+    try:
+        nome_download = request.form.get('nome_final', 'documento_processado').strip()
+        if not nome_download.endswith('.pdf'):
+            nome_download += '.pdf'
+
+        if acao == 'compactar':
+            nivel = request.form.get('nivel_compactacao', 'medio')
+            PDFManager.compactar_pdf(caminho_temp, caminho_saida, nivel)
+            registrar('pdf_tools', 0, 'process', f'PDF Compactado ({nivel})')
+            
+        elif acao == 'proteger':
+            senha = request.form.get('senha_pdf')
+            permitir_impressao = request.form.get('permitir_impressao') == 'sim'
+            PDFManager.proteger_pdf(caminho_temp, caminho_saida, senha, permitir_impressao)
+            registrar('pdf_tools', 0, 'process', 'PDF Protegido')
+
+        return send_file(caminho_saida, as_attachment=True, download_name=nome_download)
+        
+    except Exception as e:
+        flash(f"Erro ao processar PDF: {e}", "danger")
+        return redirect(url_for('pdf.ferramentas'))
+    finally:
+        if os.path.exists(caminho_temp):
+            os.remove(caminho_temp)
+
+@pdf_bp.route('/reorganizar', methods=['GET', 'POST'])
+@login_required
+def reorganizar():
+    if request.method == 'GET':
+        return render_template('pdf/reorganizar.html')
+        
+    arquivo = request.files.get('documento')
+    ordem = request.form.get('ordem_paginas')
+    
+    if not arquivo or arquivo.filename == '' or not ordem:
+        flash("Arquivo ou ordem de páginas inválidos.", "danger")
+        return redirect(url_for('pdf.reorganizar'))
+        
+    os.makedirs('instance', exist_ok=True)
+    nome_seguro = secure_filename(arquivo.filename)
+    nome_temp = f"temp_{uuid.uuid4().hex}_{nome_seguro}"
+    caminho_temp = os.path.join('instance', nome_temp)
+    caminho_saida = os.path.join('instance', f"reorg_{nome_seguro}")
+    
+    arquivo.save(caminho_temp)
+    
+    try:
+        # Converte a string de texto para uma lista de números
+        nova_ordem = [int(x) for x in ordem.split(',')]
+        
+        PDFManager.reorganizar_pdf(caminho_temp, caminho_saida, nova_ordem)
+        registrar('pdf_tools', 0, 'process', 'PDF Reorganizado (Páginas alteradas)')
+        
+        return send_file(caminho_saida, as_attachment=True, download_name=f"novo_{nome_seguro}")
+    except Exception as e:
+        flash(f"Erro ao reorganizar PDF.", "danger")
+        return redirect(url_for('pdf.reorganizar'))
+    finally:
+        if os.path.exists(caminho_temp):
+            os.remove(caminho_temp)

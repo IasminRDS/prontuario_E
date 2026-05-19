@@ -4,16 +4,11 @@ from flask_login import LoginManager
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-<<<<<<< HEAD
-# --- ESTA É A FUNÇÃO QUE FALTAVA ---
 @login_manager.user_loader
 def load_user(user_id):
     from models.user import User
-    return User.query.get(int(user_id))
-# -----------------------------------
+    return db.session.get(User, int(user_id))
 
-=======
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
 def init_db(app):
     db.init_app(app)
     login_manager.init_app(app)
@@ -42,10 +37,7 @@ def init_db(app):
         from models.faturamento import AIH, APAC
         from models.pronto_socorro import AtendimentoPS
         from models.regional import Regional
-<<<<<<< HEAD
         
-=======
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
         db.create_all()
         _seed_data()
 
@@ -53,11 +45,7 @@ def _seed_data():
     from models.user import User
     from models.unidade import Unidade
     from models.medico import Medico
-<<<<<<< HEAD
     from models.regional import Regional
-=======
-    from models.regional import Regional  # <-- FALTAVA ESTE
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
 
     if User.query.first():
         return
@@ -75,23 +63,11 @@ def _seed_data():
 
     unidade = Unidade(
         nome='UBS Central',
-<<<<<<< HEAD
         tipo='UBS'
-=======
-        cnes='1234567',
-        endereco='Rua da Saúde, 100',
-        municipio='Bom Jesus da Lapa',
-        municipio_ibge='2903907',
-        uf='BA',
-        telefone='(77) 3481-0000',
-        tipo='UBS',
-        regional_id=regional.id
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
     )
     db.session.add(unidade)
     db.session.flush()
 
-<<<<<<< HEAD
     medico_user = User.query.filter_by(email='medico@sus.gov.br').first()
     if not medico_user:
         medico_user = User(
@@ -115,32 +91,6 @@ def _seed_data():
         db.session.add(medico)
         db.session.commit()
     
-=======
-    # Médico padrão
-    medico_user = User(
-        nome='Dr. João Silva',
-        email='medico@sus.gov.br',
-        perfil='medico',
-        unidade_id=unidade.id,
-        nivel_acesso='UNIDADE',
-        regional_id=regional.id,
-        municipio_ibge='2903907',
-        uf='BA',
-        ativo=True
-    )
-    medico_user.set_password('medico123')
-    db.session.add(medico_user)
-    db.session.flush()
-
-    medico = Medico(
-        user_id=medico_user.id,
-        crm='12345-BA',
-        especialidade='Clínica Geral',
-        unidade_id=unidade.id
-    )
-    db.session.add(medico)
-    db.session.commit()
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
     _seed_vacinas()
     _seed_exames()
     _seed_hospital()
@@ -148,22 +98,15 @@ def _seed_data():
 def _seed_hospital():
     from models.internacao import Setor, Leito
     from models.cirurgia import SalaCirurgica
-<<<<<<< HEAD
     from models.unidade import Unidade
     from database.db import db
     
     if Setor.query.first():
         return
         
-    # CORREÇÃO AQUI: Pega a unidade para vincular aos leitos
     unidade = Unidade.query.first()
     unidade_id = unidade.id if unidade else 1
 
-=======
-    if Setor.query.first():
-        return
-    from database.db import db
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
     setores_data = [
         ('Clínica Médica', 'CM', 'enfermaria', '2º andar', 10),
         ('Pronto-Socorro', 'PS', 'ps', 'Térreo', 8),
@@ -173,21 +116,11 @@ def _seed_hospital():
         ('Cirurgia Geral', 'CG', 'enfermaria', '2º andar', 8),
     ]
     for nome, sigla, tipo, andar, qtd in setores_data:
-<<<<<<< HEAD
-        # unidade_id adicionado ao Setor
         s = Setor(nome=nome, sigla=sigla, tipo=tipo, andar=andar, unidade_id=unidade_id)
         db.session.add(s)
         db.session.flush()
         for i in range(1, qtd + 1):
-            # unidade_id adicionado ao Leito
             l = Leito(setor_id=s.id, unidade_id=unidade_id, numero=f'{sigla}-{i:02d}',
-=======
-        s = Setor(nome=nome, sigla=sigla, tipo=tipo, andar=andar)
-        db.session.add(s)
-        db.session.flush()
-        for i in range(1, qtd + 1):
-            l = Leito(setor_id=s.id, numero=f'{sigla}-{i:02d}',
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
                       tipo='uti' if tipo=='uti' else 'comum')
             db.session.add(l)
 
@@ -254,8 +187,4 @@ def _seed_vacinas():
     from database.db import db
     for v in vacinas:
         db.session.add(v)
-<<<<<<< HEAD
     db.session.commit()
-=======
-    db.session.commit()
->>>>>>> 14b2e6509fe6f72b490bc1faf90d773723253fc0
