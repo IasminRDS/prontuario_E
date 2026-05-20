@@ -39,6 +39,7 @@ def init_db(app):
         from models.regional import Regional
         
         db.create_all()
+        from database.seeds import seed_data
         _seed_data()
 
 def _seed_data():
