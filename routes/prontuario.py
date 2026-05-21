@@ -6,7 +6,7 @@ from models.prontuario import Prontuario
 from models.paciente import Paciente
 from models.medico import Medico
 from utils.security import validar_cid10, pode_acessar_prontuario, pode_acessar_paciente
-from utils.audit import registrar
+from utils.audit import audit_log
 
 prontuario_bp = Blueprint("prontuario", __name__, url_prefix="/prontuarios")
 
@@ -42,7 +42,7 @@ def listar_prontuarios():
 
     itens = q.order_by(Prontuario.criado_em.desc()).all()
 
-    registrar("prontuarios", None, "list", f"paciente_id={paciente_id},cid={cid}")
+    audit_log(acao_default="list", tabela_default="prontuarios")()
 
     return (
         jsonify(
@@ -72,13 +72,13 @@ def listar_prontuarios():
 
 @prontuario_bp.get("/<int:prontuario_id>")
 @login_required
+@audit_log(acao_default="view", tabela_default="prontuarios")
 def obter_prontuario(prontuario_id):
     p = Prontuario.query.get_or_404(prontuario_id)
-
     if not pode_acessar_prontuario(p, current_user):
-        return jsonify({"erro": "Sem permissão para visualizar este prontuário"}), 403
-
-    registrar("prontuarios", p.id, "view", "Visualização de prontuário")
+        return jsonify({"erro": "Sem permissão"}), 403
+    
+    return jsonify({"id": p.id, "subjetivo": p.subjetivo, ...}), 200
 
     return (
         jsonify(
@@ -119,6 +119,7 @@ def obter_prontuario(prontuario_id):
 
 @prontuario_bp.post("/")
 @login_required
+@audit_log(acao_default="create", tabela_default="prontuarios")
 def criar_prontuario():
     data = request.get_json(silent=True) or {}
 
@@ -178,18 +179,14 @@ def criar_prontuario():
     db.session.add(novo)
     db.session.commit()
 
-    registrar(
-        "prontuarios",
-        novo.id,
-        "create",
-        f"Prontuário criado para paciente {paciente_id}",
-    )
+    audit_log(acao_default="create", tabela_default="prontuarios")()
 
     return jsonify({"mensagem": "Prontuário criado com sucesso", "id": novo.id}), 201
 
 
 @prontuario_bp.put("/<int:prontuario_id>")
 @login_required
+@audit_log(acao_default="update", tabela_default="prontuarios")
 def atualizar_prontuario(prontuario_id):
     p = Prontuario.query.get_or_404(prontuario_id)
 
@@ -233,13 +230,14 @@ def atualizar_prontuario(prontuario_id):
 
     db.session.commit()
 
-    registrar("prontuarios", p.id, "update", "Prontuário atualizado")
+    audit_log(acao_default="update", tabela_default="prontuarios")()
 
     return jsonify({"mensagem": "Prontuário atualizado com sucesso"}), 200
 
 
 @prontuario_bp.post("/<int:prontuario_id>/assinar")
 @login_required
+@audit_log(acao_default="sign", tabela_default="prontuarios")
 def assinar_prontuario(prontuario_id):
     p = Prontuario.query.get_or_404(prontuario_id)
 
@@ -255,13 +253,14 @@ def assinar_prontuario(prontuario_id):
     p.assinar()
     db.session.commit()
 
-    registrar("prontuarios", p.id, "sign", "Prontuário assinado")
+    audit_log(acao_default="sign", tabela_default="prontuarios")()
 
     return jsonify({"mensagem": "Prontuário assinado com sucesso"}), 200
 
 
 @prontuario_bp.delete("/<int:prontuario_id>")
 @login_required
+@audit_log(acao_default="delete", tabela_default="prontuarios")
 def excluir_prontuario(prontuario_id):
     if current_user.perfil != "admin":
         return jsonify({"erro": "Apenas admin pode excluir prontuário"}), 403
@@ -270,6 +269,6 @@ def excluir_prontuario(prontuario_id):
     db.session.delete(p)
     db.session.commit()
 
-    registrar("prontuarios", prontuario_id, "delete", "Prontuário excluído")
+    audit_log(acao_default="delete", tabela_default="prontuarios")()
 
     return jsonify({"mensagem": "Prontuário excluído com sucesso"}), 200

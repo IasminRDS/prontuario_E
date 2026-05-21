@@ -16,7 +16,8 @@ def _to_int(value: str | None, default: int) -> int:
 
 class BaseConfig:
     # Flask / Segurança
-    SECRET_KEY = os.getenv("SECRET_KEY", "chave-secreta-forte-e-secreta-2026")
+    SECRET_KEY = os.getenv("SECRET_KEY", "KeyToChangeInProduction")
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'key-to-change-in-production'
     WTF_CSRF_ENABLED = _to_bool(os.getenv("WTF_CSRF_ENABLED"), True)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SECURE = False  # Mude para True se usar HTTPS em produção
