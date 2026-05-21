@@ -20,6 +20,7 @@
 </div>
 
 <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
 
   <div style="display:flex;flex-direction:column;gap:16px">

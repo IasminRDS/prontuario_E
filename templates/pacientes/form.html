@@ -24,6 +24,7 @@
 {% block content %}
 
 <form method="POST" action="{% if paciente %}{{ url_for('pacientes.editar', id=paciente.id) }}{% else %}{{ url_for('pacientes.novo') }}{% endif %}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <!-- IDENTIFICAÇÃO -->
   <div class="card mb-24">

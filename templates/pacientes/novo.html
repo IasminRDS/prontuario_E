@@ -15,6 +15,7 @@
 
     <div class="card-body">
       <form id="form-paciente" method="post" action="{{ url_for('pacientes.criar_paciente') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid form-grid-2">
           <div class="form-group">
             <label class="form-label">Nome <span class="obrigatorio">*</span></label>

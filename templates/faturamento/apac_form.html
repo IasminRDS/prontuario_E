@@ -4,7 +4,8 @@
 {% block topbar_actions %}<a href="{{ url_for('faturamento.apac_lista') }}" class="btn btn-secondary">Voltar</a>{% endblock %}
 {% block content %}
 <div style="max-width:620px">
-<form method="POST">
+<form method="POST"> 
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="card">
     <div class="card-header"><h3>Dados da APAC</h3></div>
     <div class="card-body">
