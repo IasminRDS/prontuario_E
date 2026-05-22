@@ -3,7 +3,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models.estoque import ItemEstoque, MovEstoque
 from database.db import db
-from utils.audit import registrar
+from utils.audit import audit_log
+from utils.security import admin_requerido
 from datetime import datetime, date
 
 estoque_bp = Blueprint('estoque', __name__, url_prefix='/estoque')
@@ -56,7 +57,7 @@ def novo():
                     usuario_id=current_user.id, tipo='entrada',
                     quantidade=item.quantidade, quantidade_anterior=0,
                     quantidade_posterior=item.quantidade, motivo='Cadastro inicial'))
-            registrar('itens_estoque', item.id, 'create', f'Item {item.nome} cadastrado')
+            audit_log(acao_default="create", tabela_default="itens_estoque")()
             db.session.commit()
             flash(f'{item.nome} cadastrado!', 'success')
             return redirect(url_for('estoque.index'))
@@ -94,7 +95,7 @@ def movimentar(id):
                 lote=lote,
                 fornecedor=request.form.get('fornecedor', '').strip() or None,
                 nota_fiscal=request.form.get('nota_fiscal', '').strip() or None))
-            registrar('itens_estoque', id, 'update', f'{tipo} {qtd}')
+            audit_log(acao_default="update", tabela_default="itens_estoque")()
             db.session.commit()
             flash(f'Registrado! Estoque: {item.quantidade} {item.unidade_medida}', 'success')
             return redirect(url_for('estoque.index'))

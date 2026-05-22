@@ -11,7 +11,7 @@ from models.encaminhamento import Encaminhamento
 from services.pdf_service import gerar_prontuario, gerar_receituario, gerar_atestado
 from services.pdf_encaminhamento import gerar_encaminhamento
 from services.pdf_manager import PDFManager
-from utils.audit import registrar
+from utils.audit import audit_log
 
 pdf_bp = Blueprint('pdf', __name__, url_prefix='/pdf')
 
@@ -23,7 +23,7 @@ def prontuario(id):
     medico   = p.medico
     unidade  = p.unidade
     buf = gerar_prontuario(p, paciente, medico, unidade)
-    registrar('prontuarios', id, 'view', 'PDF prontuário gerado')
+    audit_log(acao_default="read", tabela_default="prontuarios")
     nome = f'prontuario_{paciente.nome.split()[0].lower()}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
@@ -38,7 +38,7 @@ def receituario(id):
     medico   = p.medico
     unidade  = p.unidade
     buf = gerar_receituario(p, paciente, medico, unidade)
-    registrar('prontuarios', id, 'view', 'Receituário PDF gerado')
+    audit_log(acao_default="read", tabela_default="prontuarios")
     nome = f'receituario_{paciente.nome.split()[0].lower()}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
@@ -55,7 +55,7 @@ def atestado(paciente_id):
         cid  = request.form.get('cid', '').strip().upper() or None
         obs  = request.form.get('observacao', '').strip() or None
         buf  = gerar_atestado(paciente, medico, unidade, dias, cid, obs)
-        registrar('pacientes', paciente_id, 'view', f'Atestado {dias}d gerado')
+        audit_log(acao_default="read", tabela_default="pacientes")
         nome = f'atestado_{paciente.nome.split()[0].lower()}.pdf'
         return send_file(buf, mimetype='application/pdf',
                          as_attachment=False, download_name=nome)
@@ -70,7 +70,7 @@ def encaminhamento(id):
     medico   = enc.medico
     unidade  = enc.unidade_origem
     buf = gerar_encaminhamento(enc, paciente, medico, unidade)
-    registrar('encaminhamentos', id, 'view', 'PDF encaminhamento gerado')
+    audit_log(acao_default="read", tabela_default="encaminhamentos")
     nome = f'encaminhamento_{enc.especialidade.lower().replace(" ","_")}_{id}.pdf'
     return send_file(buf, mimetype='application/pdf',
                      as_attachment=False, download_name=nome)
@@ -112,13 +112,13 @@ def processar_pdf():
         if acao == 'compactar':
             nivel = request.form.get('nivel_compactacao', 'medio')
             PDFManager.compactar_pdf(caminho_temp, caminho_saida, nivel)
-            registrar('pdf_tools', 0, 'process', f'PDF Compactado ({nivel})')
-            
+            audit_log(acao_default="process", tabela_default="pdf_tools")
+
         elif acao == 'proteger':
             senha = request.form.get('senha_pdf')
             permitir_impressao = request.form.get('permitir_impressao') == 'sim'
             PDFManager.proteger_pdf(caminho_temp, caminho_saida, senha, permitir_impressao)
-            registrar('pdf_tools', 0, 'process', 'PDF Protegido')
+            audit_log(acao_default="process", tabela_default="pdf_tools")
 
         return send_file(caminho_saida, as_attachment=True, download_name=nome_download)
         
@@ -155,7 +155,7 @@ def reorganizar():
         nova_ordem = [int(x) for x in ordem.split(',')]
         
         PDFManager.reorganizar_pdf(caminho_temp, caminho_saida, nova_ordem)
-        registrar('pdf_tools', 0, 'process', 'PDF Reorganizado (Páginas alteradas)')
+        audit_log(acao_default="process", tabela_default="pdf_tools")
         
         return send_file(caminho_saida, as_attachment=True, download_name=f"novo_{nome_seguro}")
     except Exception as e:

@@ -5,7 +5,7 @@ from models.medicamento import Medicamento, Prescricao, ItemPrescricao
 from models.paciente import Paciente
 from models.medico import Medico
 from database.db import db
-from utils.audit import registrar
+from utils.audit import audit_log
 from utils.security import medico_requerido
 from datetime import datetime
 
@@ -79,8 +79,7 @@ def prescrever(paciente_id, prontuario_id=None):
                 )
                 db.session.add(item)
 
-            registrar('prescricoes', pres.id, 'create',
-                      f'Prescrição com {len(nomes)} item(ns) criada')
+            audit_log(acao_default="create", tabela_default="prescricoes")()
             db.session.commit()
             flash('Prescrição registrada com sucesso!', 'success')
             return redirect(url_for('medicamentos.visualizar', id=pres.id))
@@ -109,7 +108,7 @@ def atualizar_status(id):
     novo  = request.form.get('status')
     if novo in Prescricao.STATUS_LABELS:
         pres.status = novo
-        registrar('prescricoes', id, 'update', f'Status → {novo}')
+        audit_log(acao_default="update", tabela_default="prescricoes")()
         db.session.commit()
         flash('Status atualizado!', 'success')
     return redirect(url_for('medicamentos.lista_paciente',
@@ -147,7 +146,7 @@ def novo_medicamento():
             )
             db.session.add(m)
             db.session.flush()
-            registrar('medicamentos', m.id, 'create', f'Medicamento {m.nome_generico} cadastrado')
+            audit_log(acao_default="create", tabela_default="medicamentos")()
             db.session.commit()
             flash(f'{m.nome_generico} cadastrado!', 'success')
             return redirect(url_for('medicamentos.catalogo'))

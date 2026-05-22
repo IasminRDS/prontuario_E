@@ -9,26 +9,21 @@ from database.db import init_db
 # Carrega as variáveis de ambiente
 load_dotenv()
 
-# Inicializa o CSRF
+# Instância global do CSRF
 csrf = CSRFProtect()
 
 def create_app():
     # Inicializa o Flask
     app = Flask(__name__, template_folder="templates", static_folder="static")
+
+    # 1. Configurações
+    app.config.from_object(get_config_class())
+    
+    # 2. Inicializa extensões
     csrf.init_app(app)
-
-    # 1. Configurações (carregadas do seu config.py)
-    config_obj = get_config_class()
-    app.config.from_object(config_obj)
-
-    # 2. Inicializa o Banco de Dados e Login Manager (via init_db do db.py)
     init_db(app)
 
-    # Chama a função específica de configuração extra, se existir no config
-    config_obj.init_app(app)
-
-    # 3. Registro de Blueprints (Feito aqui para evitar importações circulares)
-    # Recomendação: Agrupe os registros para manter o código limpo
+    # 3. Registro de Blueprints
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.pacientes import pacientes_bp
@@ -54,7 +49,6 @@ def create_app():
     except ModuleNotFoundError:
         from routes.importar import importacao_bp
 
-    # Lista de blueprints para registro
     blueprints = [
         auth_bp, dashboard_bp, pacientes_bp, triagem_bp, atendimento_bp,
         admin_bp, prontuario_bp, estoque_bp, alertas_bp, agenda_bp,
@@ -72,10 +66,11 @@ def create_app():
 
     return app
 
-# O app é criado chamando a fábrica
+# A CRIAÇÃO DO APP DEVE SER FEITA NO ESCOPO GLOBAL
 app = create_app()
 
 if __name__ == "__main__":
+    # Agora 'app' existe e pode ser executado
     app.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000)),

@@ -6,7 +6,7 @@ from models.internacao import Internacao
 from models.paciente import Paciente
 from models.medico import Medico
 from database.db import db
-from utils.audit import registrar
+from utils.audit import audit_log
 from utils.security import medico_requerido
 from datetime import datetime, date
 
@@ -74,8 +74,7 @@ def nova(paciente_id=None):
             )
             db.session.add(cir)
             db.session.flush()
-            registrar('cirurgias', cir.id, 'create',
-                      f'Cirurgia {cir.procedimento[:50]} agendada')
+            audit_log(acao_default="create", tabela_default="cirurgias")()
             db.session.commit()
             flash('Cirurgia agendada!', 'success')
             return redirect(url_for('cirurgia.visualizar', id=cir.id))
@@ -110,7 +109,7 @@ def iniciar(id):
     cir.data_inicio= datetime.utcnow()
     if cir.sala:
         cir.sala.status = 'em_uso'
-    registrar('cirurgias', id, 'update', 'Cirurgia iniciada')
+    audit_log(acao_default="update", tabela_default="cirurgias")()
     db.session.commit()
     flash('Cirurgia iniciada!', 'success')
     return redirect(url_for('cirurgia.visualizar', id=id))
@@ -133,8 +132,7 @@ def finalizar(id):
             cir.cid_pos_op     = request.form.get('cid_pos_op', '').strip().upper() or None
             if cir.sala:
                 cir.sala.status = 'em_limpeza'
-            registrar('cirurgias', id, 'update',
-                      f'Cirurgia finalizada — {cir.duracao_real} min')
+            audit_log(acao_default="update", tabela_default="cirurgias")()
             db.session.commit()
             flash('Cirurgia finalizada!', 'success')
             return redirect(url_for('cirurgia.visualizar', id=id))
@@ -154,7 +152,7 @@ def cancelar(id):
     cir.observacoes = (cir.observacoes or '') + f'\nCancelamento: {motivo}'
     if cir.sala:
         cir.sala.status = 'livre'
-    registrar('cirurgias', id, 'update', f'Cirurgia cancelada: {motivo}')
+    audit_log(acao_default="update", tabela_default="cirurgias")()
     db.session.commit()
     flash('Cirurgia cancelada.', 'info')
     return redirect(url_for('cirurgia.painel'))

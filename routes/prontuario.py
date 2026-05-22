@@ -10,6 +10,36 @@ from utils.audit import audit_log
 
 prontuario_bp = Blueprint("prontuario", __name__, url_prefix="/prontuarios")
 
+def to_dict(p):
+    return {
+        "id": p.id,
+        "paciente_id": p.paciente_id,
+        "atendimento_id": p.atendimento_id,
+        "medico_id": p.medico_id,
+        "unidade_id": p.unidade_id,
+        "subjetivo": p.subjetivo,
+        "objetivo": p.objetivo,
+        "avaliacao": p.avaliacao,
+        "plano": p.plano,
+        "pressao_arterial": p.pressao_arterial,
+        "temperatura": p.temperatura,
+        "frequencia_cardiaca": p.frequencia_cardiaca,
+        "frequencia_respiratoria": p.frequencia_respiratoria,
+        "saturacao_o2": p.saturacao_o2,
+        "peso": p.peso,
+        "altura": p.altura,
+        "glicemia": p.glicemia,
+        "cid_principal": p.cid_principal,
+        "cid_secundario": p.cid_secundario,
+        "prescricao": p.prescricao,
+        "encaminhamento": p.encaminhamento,
+        "retorno_dias": p.retorno_dias,
+        "assinado": p.assinado,
+        "assinado_em": p.assinado_em.isoformat() if p.assinado_em else None,
+        "criado_em": p.criado_em.isoformat() if p.criado_em else None,
+        "atualizado_em": p.atualizado_em.isoformat() if p.atualizado_em else None,
+    }
+
 
 def _query_prontuario_escopo():
     q = Prontuario.query
@@ -78,7 +108,7 @@ def obter_prontuario(prontuario_id):
     if not pode_acessar_prontuario(p, current_user):
         return jsonify({"erro": "Sem permissão"}), 403
     
-    return jsonify({"id": p.id, "subjetivo": p.subjetivo, ...}), 200
+    return jsonify(to_dict(p)), 200
 
     return (
         jsonify(

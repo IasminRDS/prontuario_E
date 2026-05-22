@@ -5,7 +5,7 @@ from models.agendamento import Agendamento
 from models.paciente import Paciente
 from models.medico import Medico
 from database.db import db
-from utils.audit import registrar
+from utils.audit import audit_log
 from datetime import datetime, date, timedelta
 
 agendamento_bp = Blueprint('agendamento', __name__, url_prefix='/agendamento')
@@ -75,8 +75,7 @@ def novo(paciente_id=None):
             )
             db.session.add(ag)
             db.session.flush()
-            registrar('agendamentos', ag.id, 'create',
-                      f'Agendamento criado para {data_hora.strftime("%d/%m/%Y %H:%M")}')
+            audit_log(acao_default="create", tabela_default="agendamentos")()
             db.session.commit()
             flash('Agendamento criado com sucesso!', 'success')
             return redirect(url_for('agendamento.index',
@@ -104,8 +103,7 @@ def atualizar_status(id):
         ag.status = novo_status
         if motivo:
             ag.motivo_cancel = motivo
-        registrar('agendamentos', ag.id, 'update',
-                  f'Status alterado para {novo_status}')
+        audit_log(acao_default="update", tabela_default="agendamentos")()
         db.session.commit()
         flash(f'Status atualizado para {ag.status_label[0]}.', 'success')
 
@@ -128,7 +126,7 @@ def editar(id):
             ag.data_hora   = data_hora
             ag.tipo        = request.form.get('tipo', ag.tipo)
             ag.observacoes = request.form.get('observacoes', '').strip() or None
-            registrar('agendamentos', ag.id, 'update', 'Agendamento editado')
+            audit_log(acao_default="update", tabela_default="agendamentos")()
             db.session.commit()
             flash('Agendamento atualizado!', 'success')
             return redirect(url_for('agendamento.index',
