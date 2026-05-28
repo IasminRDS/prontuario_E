@@ -1,4 +1,4 @@
-from database.db import db
+from extensions import db
 
 
 class UnidadeSaude(db.Model):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from database.db import db
+from extensions import db
 from datetime import datetime
 
 

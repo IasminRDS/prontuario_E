@@ -1,5 +1,4 @@
 from datetime import datetime
-from database.db import db
 from extensions import db
 
 
