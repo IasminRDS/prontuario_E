@@ -1,33 +1,28 @@
+# app.py
 import os
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
-# Importações dos seus módulos de banco/extensões
-from database.db import db, migrate, login_manager 
+# Importa as instâncias já criadas no extensions.py
+from extensions import db, csrf, migrate, login_manager
 from config import get_config_class
 
-# Carrega variáveis do .env
 load_dotenv()
-
-# Instâncias globais (vazias, serão inicializadas no create_app)
-csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
-
-    # 1. Carrega Configurações (Dev ou Prod)
+    
+    # 1. Carrega Configurações
     app.config.from_object(get_config_class())
 
-    # 2. Inicializa Extensões
+    # 2. Inicializa Extensões (vinculando ao app)
     db.init_app(app)
-    migrate.init_app(app, db) # Necessário para o banco crescer com o código
-    login_manager.init_app(app)
     csrf.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
 
-    # 3. Registro de Blueprints (Simplificado em um loop)
-    # Dica: Se quiser manter o código mais limpo, você pode mover 
-    # essa lista de imports para um arquivo 'routes/__init__.py'
+    # 3. Registro de Blueprints
+    # Mover os imports para dentro da função evita importações circulares
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.pacientes import pacientes_bp
@@ -48,7 +43,7 @@ def create_app():
     from routes.auditoria import auditoria_bp
     from routes.unidades import unidades_bp
     
-    # Tratamento de erro na importação
+    # Tratamento de importação condicional
     try:
         from routes.importacao import importacao_bp
     except ImportError:
@@ -67,8 +62,7 @@ def create_app():
 
     return app
 
-# Criação do app para ser executado
-app = create_app()
-
+# Apenas para execução local
 if __name__ == "__main__":
+    app = create_app()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

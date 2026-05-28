@@ -4,6 +4,7 @@ from flask_login import current_user
 from functools import wraps
 from database.db import db
 from models.audit_log import AuditLog
+from utils.audit import registrar
 
 def audit_log(acao_default="update", tabela_default="desconhecido"):
     """Decorator para registrar ações de auditoria automaticamente."""
@@ -32,6 +33,19 @@ def audit_log(acao_default="update", tabela_default="desconhecido"):
                 print(f"[ERRO AUDITORIA]: {e}")
                 db.session.rollback()
                 
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def log_auditoria(tabela, acao):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Tenta pegar o ID do registro pela rota (ex: prontuario_id)
+            registro_id = kwargs.get('prontuario_id') or request.view_args.get('id')
+            # Registra a ação
+            registrar(tabela, registro_id, acao, f"Acesso à rota: {request.path}")
             return f(*args, **kwargs)
         return decorated_function
     return decorator

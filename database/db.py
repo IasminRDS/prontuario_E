@@ -1,6 +1,11 @@
+import sys
+import os
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from sqlalchemy import event
+from models.audit_log import AuditLog
+from extensions import db
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -39,3 +44,12 @@ def init_db(app):
         # Chama a função de seed do novo arquivo
         from database.seeds import seed_data
         seed_data()
+
+# Exemplo de hook para monitorar alterações no banco automaticamente
+@event.listens_for(db.session, 'before_commit')
+def receive_before_commit(session):
+    for obj in session.dirty:
+        if hasattr(obj, "__tablename__"):
+            # Aqui você pode registrar automaticamente toda alteração
+            # Log de segurança para compliance
+            pass

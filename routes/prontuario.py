@@ -7,6 +7,7 @@ from models.paciente import Paciente
 from models.medico import Medico
 from utils.security import validar_cid10, pode_acessar_prontuario, pode_acessar_paciente
 from utils.audit import audit_log
+from utils.audit import log_auditoria
 
 prontuario_bp = Blueprint("prontuario", __name__, url_prefix="/prontuarios")
 
@@ -72,7 +73,7 @@ def listar_prontuarios():
 
     itens = q.order_by(Prontuario.criado_em.desc()).all()
 
-    audit_log(acao_default="list", tabela_default="prontuarios")()
+    log_auditoria(tabela="prontuarios", acao="list")()
 
     return (
         jsonify(
@@ -102,7 +103,7 @@ def listar_prontuarios():
 
 @prontuario_bp.get("/<int:prontuario_id>")
 @login_required
-@audit_log(acao_default="view", tabela_default="prontuarios")
+@log_auditoria("prontuarios", "view")
 def obter_prontuario(prontuario_id):
     p = Prontuario.query.get_or_404(prontuario_id)
     if not pode_acessar_prontuario(p, current_user):
