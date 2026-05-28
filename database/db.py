@@ -1,7 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import LoginManager
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 
 @login_manager.user_loader
@@ -10,8 +12,16 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 def init_db(app):
+    """
+    Inicializa as extensões do banco de dados.
+    Nota: A criação de tabelas (db.create_all) e seeds 
+    deve ser feita via comandos do Flask-Migrate ou 
+    scripts específicos de CLI.
+    """
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
+    
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'warning'

@@ -16,31 +16,36 @@ def _to_int(value: str | None, default: int) -> int:
 
 class BaseConfig:
     # Flask / Segurança
-    SECRET_KEY = os.getenv("SECRET_KEY", "KeyToChangeInProduction")
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'key-to-change-in-production'
+    # Busca a chave no arquivo .env. Se não achar, usa uma padrão provisória.
+    SECRET_KEY = os.getenv("SECRET_KEY", "chave-secreta-prontuario-estadual-super-segura")
+    
+    # Etapa 1.2: Proteção CSRF ativada por padrão
     WTF_CSRF_ENABLED = _to_bool(os.getenv("WTF_CSRF_ENABLED"), True)
+    
+    # Segurança de Cookies
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = False  # Mude para True se usar HTTPS em produção
+    SESSION_COOKIE_SECURE = False  # Será True em Produção (HTTPS)
     SESSION_COOKIE_SAMESITE = "Lax"
 
-    # Banco de Dados
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/prontuario.db")
+    # Banco de Dados (Etapa 1.1 - Mudança para PostgreSQL)
+    # Formato: postgresql://usuario:senha@servidor:porta/nome_do_banco
+    DEFAULT_DB_URL = "postgresql://postgres:admin@localhost:5432/prontuario_db"
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Engine options para estabilidade de conexão
+    # Engine options para estabilidade de conexão no PostgreSQL
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
+        "pool_pre_ping": True, # Testa a conexão antes de cada query (evita quedas)
         "pool_recycle": _to_int(os.getenv("DB_POOL_RECYCLE"), 1800),
-        "pool_size": _to_int(os.getenv("DB_POOL_SIZE"), 10),
-        "max_overflow": _to_int(os.getenv("DB_MAX_OVERFLOW"), 20),
+        "pool_size": _to_int(os.getenv("DB_POOL_SIZE"), 20), # Aumentado para suportar mais requisições
+        "max_overflow": _to_int(os.getenv("DB_MAX_OVERFLOW"), 40),
     }
 
     @classmethod
     def init_app(cls, app):
-        # Ajustes específicos de driver (opcional)
+        # Fallback de segurança caso alguém ainda tente rodar SQLite no ambiente local
         uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
         if uri.startswith("sqlite"):
-            # SQLite não usa pool_size/max_overflow como Postgres
             opts = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}))
             opts.pop("pool_size", None)
             opts.pop("max_overflow", None)
@@ -52,7 +57,7 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True # Obriga o uso de HTTPS
     LOG_LEVEL = "INFO"
 
 def get_config_class():

@@ -3,27 +3,31 @@ from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
+# Importações dos seus módulos de banco/extensões
+from database.db import db, migrate, login_manager 
 from config import get_config_class
-from database.db import init_db
 
-# Carrega as variáveis de ambiente
+# Carrega variáveis do .env
 load_dotenv()
 
-# Instância global do CSRF
+# Instâncias globais (vazias, serão inicializadas no create_app)
 csrf = CSRFProtect()
 
 def create_app():
-    # Inicializa o Flask
     app = Flask(__name__, template_folder="templates", static_folder="static")
 
-    # 1. Configurações
+    # 1. Carrega Configurações (Dev ou Prod)
     app.config.from_object(get_config_class())
-    
-    # 2. Inicializa extensões
-    csrf.init_app(app)
-    init_db(app)
 
-    # 3. Registro de Blueprints
+    # 2. Inicializa Extensões
+    db.init_app(app)
+    migrate.init_app(app, db) # Necessário para o banco crescer com o código
+    login_manager.init_app(app)
+    csrf.init_app(app)
+
+    # 3. Registro de Blueprints (Simplificado em um loop)
+    # Dica: Se quiser manter o código mais limpo, você pode mover 
+    # essa lista de imports para um arquivo 'routes/__init__.py'
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.pacientes import pacientes_bp
@@ -43,10 +47,11 @@ def create_app():
     from routes.backup import backup_bp
     from routes.auditoria import auditoria_bp
     from routes.unidades import unidades_bp
-
+    
+    # Tratamento de erro na importação
     try:
         from routes.importacao import importacao_bp
-    except ModuleNotFoundError:
+    except ImportError:
         from routes.importar import importacao_bp
 
     blueprints = [
@@ -60,19 +65,10 @@ def create_app():
     for bp in blueprints:
         app.register_blueprint(bp)
 
-    @app.context_processor
-    def inject_available_endpoints():
-        return {"available_endpoints": set(app.view_functions.keys())}
-
     return app
 
-# A CRIAÇÃO DO APP DEVE SER FEITA NO ESCOPO GLOBAL
+# Criação do app para ser executado
 app = create_app()
 
 if __name__ == "__main__":
-    # Agora 'app' existe e pode ser executado
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=os.environ.get("FLASK_DEBUG", "1") == "1",
-    )
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
