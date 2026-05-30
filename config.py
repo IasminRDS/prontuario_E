@@ -14,52 +14,48 @@ def _to_int(value: str | None, default: int) -> int:
     except (TypeError, ValueError):
         return default
 
-class BaseConfig:
+class Config:
     # Flask / Segurança
-    # Busca a chave no arquivo .env. Se não achar, usa uma padrão provisória.
     SECRET_KEY = os.getenv("SECRET_KEY", "chave-secreta-prontuario-estadual-super-segura")
-    
-    # Etapa 1.2: Proteção CSRF ativada por padrão
     WTF_CSRF_ENABLED = _to_bool(os.getenv("WTF_CSRF_ENABLED"), True)
     
     # Segurança de Cookies
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = False  # Será True em Produção (HTTPS)
+    SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_SAMESITE = "Lax"
 
-    # Banco de Dados (Etapa 1.1 - Mudança para PostgreSQL)
-    # Formato: postgresql://usuario:senha@servidor:porta/nome_do_banco
+    # Banco de Dados
     DEFAULT_DB_URL = "postgresql://postgres:admin@localhost:5432/prontuario_db"
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Engine options para estabilidade de conexão no PostgreSQL
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True, # Testa a conexão antes de cada query (evita quedas)
+        "pool_pre_ping": True,
         "pool_recycle": _to_int(os.getenv("DB_POOL_RECYCLE"), 1800),
-        "pool_size": _to_int(os.getenv("DB_POOL_SIZE"), 20), # Aumentado para suportar mais requisições
+        "pool_size": _to_int(os.getenv("DB_POOL_SIZE"), 20),
         "max_overflow": _to_int(os.getenv("DB_MAX_OVERFLOW"), 40),
     }
 
-    @classmethod
-    def init_app(cls, app):
-        # Fallback de segurança caso alguém ainda tente rodar SQLite no ambiente local
-        uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-        if uri.startswith("sqlite"):
-            opts = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}))
-            opts.pop("pool_size", None)
-            opts.pop("max_overflow", None)
-            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = opts
+    @staticmethod
+    def init_app(app):
+        pass
 
-class DevelopmentConfig(BaseConfig):
+class DevelopmentConfig(Config):
     DEBUG = True
     LOG_LEVEL = "DEBUG"
 
-class ProductionConfig(BaseConfig):
+class ProductionConfig(Config):
     DEBUG = False
-    SESSION_COOKIE_SECURE = True # Obriga o uso de HTTPS
+    SESSION_COOKIE_SECURE = True
     LOG_LEVEL = "INFO"
+
+# Dicionário de configuração fora das classes
+config_map = {
+    "dev": DevelopmentConfig,
+    "prod": ProductionConfig,
+    "default": DevelopmentConfig
+}
 
 def get_config_class():
     env = os.getenv("APP_ENV", "dev").strip().lower()
-    return {"dev": DevelopmentConfig, "prod": ProductionConfig}.get(env, DevelopmentConfig)
+    return config_map.get(env, config_map["default"])

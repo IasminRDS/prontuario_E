@@ -1,9 +1,8 @@
-# app.py
 import os
 from flask import Flask
 from dotenv import load_dotenv
 
-# Importa as instâncias já criadas no extensions.py
+# Importa as instâncias das extensões
 from extensions import db, csrf, migrate, login_manager
 from config import get_config_class
 
@@ -12,17 +11,16 @@ load_dotenv()
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
     
-    # 1. Carrega Configurações
+    # Carrega a configuração dinamicamente
     app.config.from_object(get_config_class())
 
-    # 2. Inicializa Extensões (vinculando ao app)
+    # Inicializa Extensões
     db.init_app(app)
     csrf.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    # 3. Registro de Blueprints
-    # Mover os imports para dentro da função evita importações circulares
+    # Registro de Blueprints
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.pacientes import pacientes_bp
@@ -43,7 +41,6 @@ def create_app():
     from routes.auditoria import auditoria_bp
     from routes.unidades import unidades_bp
     
-    # Tratamento de importação condicional
     try:
         from routes.importacao import importacao_bp
     except ImportError:
@@ -62,7 +59,6 @@ def create_app():
 
     return app
 
-# Apenas para execução local
 if __name__ == "__main__":
     app = create_app()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
